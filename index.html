@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="manifest.json">
+<title>Calculadora FLUIG</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f3f4f6;color:#111827}
+.app{max-width:900px;margin:auto;padding:20px}
+header{background:#111827;color:#fff;border-radius:20px;padding:22px;margin-bottom:16px}
+h1{margin:0 0 5px;font-size:25px} header p{margin:0;color:#d1d5db}
+.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 4px 18px #0000000d}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:#374151}
+input{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:11px;font-size:16px;outline:none}
+input:focus{border-color:#111827;box-shadow:0 0 0 3px #11182718}
+button{border:0;border-radius:12px;padding:13px 16px;font-weight:800;font-size:15px;cursor:pointer}
+.primary{background:#111827;color:#fff}.secondary{background:#e5e7eb;color:#111827}
+.actions{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap}
+.results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.result{background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:14px}
+.result span{display:block;color:#6b7280;font-size:12px;font-weight:700;margin-bottom:4px}
+.result strong{font-size:20px}
+.highlight{background:#111827;color:#fff}.highlight span{color:#d1d5db}
+.note{font-size:12px;color:#6b7280;line-height:1.5}
+@media(max-width:600px){.app{padding:12px}.grid,.results{grid-template-columns:1fr}header{border-radius:15px}.card{padding:14px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>Calculadora FLUIG</h1>
+  <p>Primeira versão baseada na planilha original.</p>
+</header>
+
+<section class="card">
+<h2>Dados de entrada</h2>
+<div class="grid">
+<div><label for="normal">Preço normal (R$)</label><input id="normal" type="number" step="0.01" value="6.69"></div>
+<div><label for="custo">Custo do produto (R$)</label><input id="custo" type="number" step="0.01" value="5.42"></div>
+<div><label for="taxa">Taxa (%)</label><input id="taxa" type="number" step="0.01" value="0"></div>
+<div><label for="volume">Volume</label><input id="volume" type="number" step="1" value="110"></div>
+<div><label for="concorrencia">Concorrência (R$)</label><input id="concorrencia" type="number" step="0.01" value="6.29"></div>
+<div><label for="desconto">Desconto para preço sugerido (R$)</label><input id="desconto" type="number" step="0.01" value="0.45"></div>
+</div>
+<div class="actions">
+<button class="primary" onclick="calcular()">Calcular</button>
+<button class="secondary" onclick="limpar()">Limpar</button>
+</div>
+</section>
+
+<section class="card">
+<h2>Resultados</h2>
+<div class="results">
+<div class="result highlight"><span>Preço sugerido</span><strong id="rPreco">—</strong></div>
+<div class="result"><span>Margem atual/L</span><strong id="rMargemAtual">—</strong></div>
+<div class="result"><span>Margem/L</span><strong id="rMargem">—</strong></div>
+<div class="result"><span>Margem %</span><strong id="rMargemPct">—</strong></div>
+<div class="result"><span>IRC</span><strong id="rIrc">—</strong></div>
+<div class="result"><span>IC</span><strong id="rIc">—</strong></div>
+<div class="result"><span>Taxa (R$)</span><strong id="rTaxa">—</strong></div>
+<div class="result"><span>ROI</span><strong id="rRoi">—</strong></div>
+<div class="result"><span>Volume projetado</span><strong id="rVolume">—</strong></div>
+</div>
+</section>
+
+<section class="card">
+<h2>Fórmulas da planilha</h2>
+<p class="note">
+Preço sugerido = preço normal − desconto. Custo do produto = valor informado.
+Margem atual/L = preço normal − custo. IRC = (preço sugerido − custo) × volume.
+Margem/L = (preço sugerido − preço sugerido × taxa) − custo.
+Margem % = margem/L ÷ preço sugerido. IC = (concorrência − preço sugerido) ÷ concorrência.
+Taxa (R$) = preço sugerido × taxa. ROI = IC ÷ preço sugerido.
+</p>
+<p class="note"><b>Observação:</b> a planilha original possui fórmulas específicas, inclusive o cálculo de ROI acima. Nesta primeira versão elas foram reproduzidas para manter o comportamento da planilha.</p>
+</section>
+</div>
+
+<script>
+const money = v => Number.isFinite(v) ? v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) : '—';
+const pct = v => Number.isFinite(v) ? (v*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%' : '—';
+const num = v => Number.isFinite(v) ? v.toLocaleString('pt-BR',{maximumFractionDigits:2}) : '—';
+
+function calcular(){
+  const normal=+document.getElementById('normal').value||0;
+  const custo=+document.getElementById('custo').value||0;
+  const taxa= (+document.getElementById('taxa').value||0)/100;
+  const volume=+document.getElementById('volume').value||0;
+  const concorrencia=+document.getElementById('concorrencia').value||0;
+  const desconto=+document.getElementById('desconto').value||0;
+
+  const preco=normal-desconto;
+  const volumeProjetado=volume;
+  const margemAtual=normal-custo;
+  const irc=(preco-custo)*volume;
+  const margem=(preco-(preco*taxa))-custo;
+  const margemPct=preco ? margem/preco : NaN;
+  const ic=concorrencia ? (concorrencia-preco)/concorrencia : NaN;
+  const taxaR=preco*taxa;
+  const roi=preco ? ic/preco : NaN;
+
+  rPreco.textContent=money(preco);
+  rMargemAtual.textContent=money(margemAtual);
+  rMargem.textContent=money(margem);
+  rMargemPct.textContent=pct(margemPct);
+  rIrc.textContent=money(irc);
+  rIc.textContent=pct(ic);
+  rTaxa.textContent=money(taxaR);
+  rRoi.textContent=pct(roi);
+  rVolume.textContent=num(volumeProjetado);
+}
+function limpar(){
+  document.querySelectorAll('input').forEach(i=>i.value='');
+  document.querySelectorAll('.result strong').forEach(e=>e.textContent='—');
+}
+calcular();
+if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
+</script>
+</body>
+</html>
