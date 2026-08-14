@@ -6,243 +6,914 @@
 <meta name="theme-color" content="#111827">
 <link rel="manifest" href="manifest.json">
 <title>Calculadora FLUIG</title>
+
 <style>
 *{box-sizing:border-box}
-:root{--bg:#f3f4f6;--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--card:#fff;--green:#047857;--yellow:#b45309;--red:#b91c1c;--blue:#1d4ed8}
-body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
-.app{max-width:1100px;margin:auto;padding:20px}
-header{background:linear-gradient(135deg,#111827,#1f2937);color:#fff;border-radius:22px;padding:24px;margin-bottom:16px}
-h1{margin:0 0 6px;font-size:26px} header p{margin:0;color:#d1d5db;line-height:1.45}
-.card{background:var(--card);border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 4px 18px #0000000d;border:1px solid #ffffff}
-.card h2{margin:0 0 14px;font-size:18px}.card h3{margin:8px 0 12px;font-size:15px;color:#374151}
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
-label{display:block;font-size:13px;font-weight:800;margin-bottom:6px;color:#374151}
-input,select,textarea{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:12px;font-size:15px;outline:none;background:#fff;color:#111827}
-input:focus,select:focus,textarea:focus{border-color:#111827;box-shadow:0 0 0 3px #11182718}
-input[readonly]{background:#f9fafb;color:#4b5563}
-button{border:0;border-radius:12px;padding:13px 16px;font-weight:900;font-size:15px;cursor:pointer}
-.primary{background:#111827;color:#fff}.secondary{background:#e5e7eb;color:#111827}.copy{background:#dbeafe;color:#1e3a8a}
-.actions{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap}.note{font-size:12px;color:var(--muted);line-height:1.5}.small{font-size:12px;color:var(--muted)}
-.status{border-radius:18px;padding:18px;color:#fff;margin-bottom:12px}.status strong{display:block;font-size:28px;margin-top:4px}.status.aprovado{background:var(--green)}.status.atencao{background:var(--yellow)}.status.analise{background:var(--red)}.status.neutro{background:#374151}
-.results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.result{background:#f9fafb;border:1px solid var(--line);border-radius:14px;padding:14px}.result span{display:block;color:var(--muted);font-size:12px;font-weight:800;margin-bottom:5px}.result strong{font-size:19px}.result.main{background:#111827;color:#fff}.result.main span{color:#d1d5db}
-.alert{padding:12px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:13px;font-weight:700;margin-top:10px}.ok{background:#ecfdf5;border-color:#a7f3d0;color:#047857}.숨{display:none!important}
-textarea{min-height:92px;resize:vertical;line-height:1.45}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;font-weight:800;margin-left:6px}.divider{height:1px;background:var(--line);margin:16px 0}
-@media(max-width:800px){.grid,.grid.two,.results{grid-template-columns:1fr}.app{padding:12px}header{border-radius:16px}.card{padding:14px}.status strong{font-size:23px}}
+
+:root{
+  --bg:#f3f4f6;
+  --ink:#111827;
+  --muted:#6b7280;
+  --line:#e5e7eb;
+  --card:#ffffff;
+  --dark:#111827;
+  --green:#047857;
+  --yellow:#b45309;
+  --red:#b91c1c;
+  --blue:#1d4ed8;
+}
+
+body{
+  margin:0;
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+}
+
+.app{
+  max-width:1100px;
+  margin:auto;
+  padding:20px;
+}
+
+header{
+  background:linear-gradient(135deg,#111827,#1f2937);
+  color:#fff;
+  border-radius:22px;
+  padding:24px;
+  margin-bottom:16px;
+}
+
+h1{
+  margin:0 0 6px;
+  font-size:26px;
+}
+
+header p{
+  margin:0;
+  color:#d1d5db;
+  line-height:1.45;
+}
+
+.card{
+  background:var(--card);
+  border-radius:18px;
+  padding:18px;
+  margin-bottom:16px;
+  box-shadow:0 4px 18px #0000000d;
+  border:1px solid #ffffff;
+}
+
+.card h2{
+  margin:0 0 14px;
+  font-size:18px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+
+.grid.two{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+
+label{
+  display:block;
+  font-size:13px;
+  font-weight:800;
+  margin-bottom:6px;
+  color:#374151;
+}
+
+input,
+select,
+textarea{
+  width:100%;
+  padding:13px;
+  border:1px solid #d1d5db;
+  border-radius:12px;
+  font-size:15px;
+  outline:none;
+  background:#fff;
+  color:#111827;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+  border-color:#111827;
+  box-shadow:0 0 0 3px #11182718;
+}
+
+input[readonly]{
+  background:#f9fafb;
+  color:#4b5563;
+}
+
+button{
+  border:0;
+  border-radius:12px;
+  padding:13px 16px;
+  font-weight:900;
+  font-size:15px;
+  cursor:pointer;
+}
+
+.primary{
+  background:#111827;
+  color:#fff;
+}
+
+.secondary{
+  background:#e5e7eb;
+  color:#111827;
+}
+
+.copy{
+  background:#dbeafe;
+  color:#1e3a8a;
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:15px;
+  flex-wrap:wrap;
+}
+
+.note{
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.5;
+}
+
+.small{
+  font-size:12px;
+  color:#d1d5db;
+  margin-top:6px;
+}
+
+.status{
+  border-radius:18px;
+  padding:18px;
+  color:#fff;
+  margin-bottom:12px;
+}
+
+.status span{
+  font-size:12px;
+  font-weight:800;
+  opacity:.9;
+}
+
+.status strong{
+  display:block;
+  font-size:28px;
+  margin-top:4px;
+}
+
+.status.aprovado{
+  background:var(--green);
+}
+
+.status.atencao{
+  background:var(--yellow);
+}
+
+.status.analise{
+  background:var(--red);
+}
+
+.status.neutro{
+  background:#374151;
+}
+
+.results{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+
+.result{
+  background:#f9fafb;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+}
+
+.result span{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:800;
+  margin-bottom:5px;
+}
+
+.result strong{
+  font-size:19px;
+}
+
+.result.main{
+  background:#111827;
+  color:#fff;
+}
+
+.result.main span{
+  color:#d1d5db;
+}
+
+.alert{
+  padding:12px;
+  border-radius:12px;
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  color:#9a3412;
+  font-size:13px;
+  font-weight:700;
+  margin-top:10px;
+}
+
+.ok{
+  background:#ecfdf5;
+  border-color:#a7f3d0;
+  color:#047857;
+}
+
+.hide{
+  display:none!important;
+}
+
+textarea{
+  min-height:105px;
+  resize:vertical;
+  line-height:1.45;
+}
+
+.pill{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#eef2ff;
+  color:#3730a3;
+  font-size:12px;
+  font-weight:800;
+  margin-left:6px;
+}
+
+.divider{
+  height:1px;
+  background:var(--line);
+  margin:16px 0;
+}
+
+.price-mode{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+
+.price-mode button{
+  background:#f3f4f6;
+  color:#111827;
+  border:1px solid #e5e7eb;
+}
+
+.price-mode button.active{
+  background:#111827;
+  color:#fff;
+}
+
+.bars{
+  display:grid;
+  gap:12px;
+}
+
+.bar-row span{
+  display:block;
+  font-size:12px;
+  font-weight:800;
+  color:#4b5563;
+  margin-bottom:5px;
+}
+
+.bar-bg{
+  height:12px;
+  background:#e5e7eb;
+  border-radius:999px;
+  overflow:hidden;
+}
+
+.bar-fill{
+  height:100%;
+  width:0%;
+  border-radius:999px;
+  background:#111827;
+}
+
+.bar-fill.minima{
+  background:#6b7280;
+}
+
+.bar-fill.liquida{
+  background:#047857;
+}
+
+@media(max-width:800px){
+  .grid,
+  .grid.two,
+  .results,
+  .price-mode{
+    grid-template-columns:1fr;
+  }
+
+  .app{
+    padding:12px;
+  }
+
+  header{
+    border-radius:16px;
+  }
+
+  .card{
+    padding:14px;
+  }
+
+  .status strong{
+    font-size:23px;
+  }
+}
 </style>
 </head>
+
 <body>
 <div class="app">
+
 <header>
   <h1>Calculadora FLUIG</h1>
-  <p>Simulação comercial com preço atual, margem mínima ajustada ao volume, limite aprovável e justificativa pronta para copiar.</p>
+  <p>Aprovador comercial com base de preços, custo total, desconto sugerido, margem mínima ajustada ao volume e justificativa pronta para copiar.</p>
 </header>
 
 <section class="card">
-  <h2>1. Base de preço atual <span class="pill">opcional</span></h2>
-  <p class="note">Use a base de preços para preencher unidade, produto, preço, custo e margem automaticamente. Se não carregar base, a calculadora continua funcionando com digitação manual.</p>
+  <h2>1. Base da operação <span class="pill">carregada pelo JSON</span></h2>
+
+  <p class="note">
+    A base é carregada automaticamente pelo arquivo precos_atuais.json. Usuários comuns apenas selecionam unidade, produto e tipo de preço.
+  </p>
+
   <div class="grid">
-    <div><label for="arquivoBase">Carregar planilha de preços (.xlsx)</label><input id="arquivoBase" type="file" accept=".xlsx,.xls" onchange="importarExcel(event)"></div>
-    <div><label for="unidade">Unidade</label><select id="unidade" onchange="preencherProdutos()"><option value="">Carregue a base ou selecione</option></select></div>
-    <div><label for="produto">Produto</label><select id="produto" onchange="aplicarPrecoSelecionado()"><option value="">Selecione a unidade primeiro</option></select></div>
+    <div>
+      <label for="unidade">Unidade</label>
+      <select id="unidade" onchange="preencherProdutos()">
+        <option value="">Carregando unidades...</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="produto">Produto</label>
+      <select id="produto" onchange="aplicarProdutoSelecionado()">
+        <option value="">Selecione a unidade primeiro</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Tipo de preço usado como base</label>
+      <div class="price-mode">
+        <button type="button" id="btnPromo" onclick="selecionarTipoPreco('promo')">Promo</button>
+        <button type="button" id="btnCredito" onclick="selecionarTipoPreco('credito')">Crédito</button>
+        <button type="button" id="btnBomba" onclick="selecionarTipoPreco('bomba')" class="active">Bomba</button>
+      </div>
+    </div>
   </div>
-  <div id="msgBase" class="alert 숨"></div>
+
+  <div id="msgBase" class="alert hide"></div>
+
   <div class="divider"></div>
+
   <div class="grid">
-    <div><label>Bandeira</label><input id="bandeira" readonly></div>
-    <div><label>Classificação</label><input id="classificacao" readonly></div>
-    <div><label>Data de vigência</label><input id="dataVigencia" readonly></div>
-    <div><label>Data do custo</label><input id="dataCusto" readonly></div>
-    <div><label>Preço normal/base (R$)</label><input id="normal" type="number" step="0.0001" value="6.69"></div>
-    <div><label>Custo do produto (R$)</label><input id="custo" type="number" step="0.0001" value="5.42"></div>
+    <div>
+      <label>Bandeira</label>
+      <input id="bandeira" readonly>
+    </div>
+
+    <div>
+      <label>Classificação</label>
+      <input id="classificacao" readonly>
+    </div>
+
+    <div>
+      <label>Data de vigência</label>
+      <input id="dataVigencia" readonly>
+    </div>
+
+    <div>
+      <label>Preço base selecionado (R$)</label>
+      <input id="precoBase" type="number" step="0.0001" readonly>
+    </div>
+
+    <div>
+      <label>Preço concorrente / KMV (R$)</label>
+      <input id="concorrencia" type="number" step="0.0001">
+    </div>
+
+    <div>
+      <label>Data do custo</label>
+      <input id="dataCusto" readonly>
+    </div>
   </div>
 </section>
 
 <section class="card">
-  <h2>2. Dados da simulação</h2>
+  <h2>2. Custos</h2>
+
   <div class="grid">
-    <div><label for="precoSugerido">Preço sugerido ao cliente (R$)</label><input id="precoSugerido" type="number" step="0.0001" value="6.24"></div>
-    <div><label for="concorrencia">Concorrência (R$)</label><input id="concorrencia" type="number" step="0.0001" value="6.29"></div>
-    <div><label for="taxa">Taxa (%)</label><input id="taxa" type="number" step="0.01" value="0"></div>
-    <div><label for="volumeAtual">Volume atual mensal (L)</label><input id="volumeAtual" type="number" step="1" value="110"></div>
-    <div><label for="volumeProjetado">Volume projetado mensal (L)</label><input id="volumeProjetado" type="number" step="1" value="110"></div>
-    <div><label for="contribuicaoMinima">Contribuição mínima desejada (R$)</label><input id="contribuicaoMinima" type="number" step="0.01" value="0"></div>
-    <div><label for="volumeGarantido">Volume garantido?</label><select id="volumeGarantido"><option value="sim">Sim</option><option value="nao" selected>Não</option></select></div>
-    <div><label for="validadeDias">Validade da simulação (dias)</label><input id="validadeDias" type="number" step="1" value="3"></div>
-    <div><label for="desconto">Desconto vs preço normal (R$)</label><input id="desconto" type="number" step="0.0001" readonly></div>
+    <div>
+      <label>Custo NFast (R$)</label>
+      <input id="custoNFast" type="number" step="0.0001" readonly>
+    </div>
+
+    <div>
+      <label>Frete médio (R$)</label>
+      <input id="freteMedio" type="number" step="0.0001" readonly>
+    </div>
+
+    <div>
+      <label>Custo total (R$)</label>
+      <input id="custoTotal" type="number" step="0.0001" readonly>
+    </div>
   </div>
-  <div class="actions"><button class="primary" onclick="calcular()">Calcular</button><button class="secondary" onclick="limpar()">Limpar</button></div>
+
+  <p class="note">
+    Custo total = Custo NFast + Frete médio.
+  </p>
 </section>
 
 <section class="card">
-  <h2>3. Resultado da análise</h2>
-  <div id="statusBox" class="status neutro"><span>Nível de aprovação</span><strong id="rNivel">—</strong><div id="rResumo" class="small"></div></div>
+  <h2>3. Simulação comercial</h2>
+
+  <div class="grid">
+    <div>
+      <label for="precoSugerido">Preço sugerido ao cliente (R$)</label>
+      <input id="precoSugerido" type="number" step="0.0001" oninput="atualizarPeloPreco()">
+    </div>
+
+    <div>
+      <label for="descontoSugerido">Desconto sugerido ao cliente (R$)</label>
+      <input id="descontoSugerido" type="number" step="0.0001" oninput="atualizarPeloDesconto()">
+    </div>
+
+    <div>
+      <label for="taxa">Taxa (%)</label>
+      <input id="taxa" type="number" step="0.01" value="0" oninput="calcular()">
+    </div>
+
+    <div>
+      <label for="volumeAtual">Volume atual mensal (L)</label>
+      <input id="volumeAtual" type="number" step="1" value="0" oninput="calcular()">
+    </div>
+
+    <div>
+      <label for="volumeProjetado">Volume projetado mensal (L)</label>
+      <input id="volumeProjetado" type="number" step="1" value="0" oninput="calcular()">
+    </div>
+
+    <div>
+      <label for="volumeGarantido">Volume garantido?</label>
+      <select id="volumeGarantido" onchange="calcular()">
+        <option value="sim">Sim</option>
+        <option value="nao" selected>Não</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="primary" onclick="calcular()">Calcular</button>
+    <button class="secondary" onclick="limparSimulacao()">Limpar simulação</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>4. Resultado da análise</h2>
+
+  <div id="statusBox" class="status neutro">
+    <span>Nível de aprovação</span>
+    <strong id="rNivel">—</strong>
+    <div id="rResumo" class="small"></div>
+  </div>
+
   <div class="results">
-    <div class="result main"><span>Margem líquida por litro</span><strong id="rMargemLiquida">—</strong></div>
-    <div class="result main"><span>Margem mínima requerida</span><strong id="rMargemMinima">—</strong></div>
-    <div class="result main"><span>Folga de segurança</span><strong id="rFolga">—</strong></div>
-    <div class="result"><span>Contribuição mensal estimada</span><strong id="rContribuicao">—</strong></div>
-    <div class="result"><span>Custo máximo suportado</span><strong id="rCustoMaximo">—</strong></div>
-    <div class="result"><span>Desconto máximo permitido</span><strong id="rDescontoMaximo">—</strong></div>
-    <div class="result"><span>Preço mínimo aprovável</span><strong id="rPrecoMinimo">—</strong></div>
-    <div class="result"><span>Data de expiração</span><strong id="rExpiracao">—</strong></div>
-    <div class="result"><span>Volume considerado</span><strong id="rVolumeConsiderado">—</strong></div>
+    <div class="result main">
+      <span>Margem líquida por litro</span>
+      <strong id="rMargemLiquida">—</strong>
+    </div>
+
+    <div class="result main">
+      <span>Margem mínima requerida</span>
+      <strong id="rMargemMinima">—</strong>
+    </div>
+
+    <div class="result main">
+      <span>Folga de segurança</span>
+      <strong id="rFolga">—</strong>
+    </div>
+
+    <div class="result">
+      <span>Contribuição mensal estimada</span>
+      <strong id="rContribuicao">—</strong>
+    </div>
+
+    <div class="result">
+      <span>Preço mínimo aprovável</span>
+      <strong id="rPrecoMinimo">—</strong>
+    </div>
+
+    <div class="result">
+      <span>Desconto máximo permitido</span>
+      <strong id="rDescontoMaximo">—</strong>
+    </div>
+
+    <div class="result">
+      <span>Custo máximo suportado</span>
+      <strong id="rCustoMaximo">—</strong>
+    </div>
+
+    <div class="result">
+      <span>Volume considerado</span>
+      <strong id="rVolumeConsiderado">—</strong>
+    </div>
+
+    <div class="result">
+      <span>Competitividade vs concorrência</span>
+      <strong id="rIc">—</strong>
+    </div>
   </div>
 </section>
 
 <section class="card">
-  <h2>4. Justificativa para copiar no FLUIG</h2>
-  <textarea id="justificativa" readonly></textarea>
-  <div class="actions"><button class="copy" onclick="copiarJustificativa()">Copiar justificativa</button></div>
+  <h2>5. Comparativo visual</h2>
+
+  <div class="bars">
+    <div class="bar-row">
+      <span>Margem líquida</span>
+      <div class="bar-bg">
+        <div id="barLiquida" class="bar-fill liquida"></div>
+      </div>
+    </div>
+
+    <div class="bar-row">
+      <span>Margem mínima requerida</span>
+      <div class="bar-bg">
+        <div id="barMinima" class="bar-fill minima"></div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <section class="card">
-  <h2>Detalhe do cálculo</h2>
-  <p class="note"><b>Margem mínima requerida</b> = maior valor entre piso absoluto, margem por contribuição mínima e margem base por faixa de volume, somado ao adicional de risco quando o volume não for garantido.</p>
-  <p class="note"><b>Faixas usadas:</b> até 1.000 L = R$ 0,30/L; 1.001 a 5.000 L = R$ 0,25/L; 5.001 a 20.000 L = R$ 0,20/L; 20.001 a 50.000 L = R$ 0,15/L; acima de 50.000 L = R$ 0,12/L. Piso absoluto: R$ 0,10/L. Volume não garantido: +R$ 0,03/L.</p>
+  <h2>6. Justificativa para copiar no FLUIG</h2>
+
+  <textarea id="justificativa" readonly></textarea>
+
+  <div class="actions">
+    <button class="copy" onclick="copiarJustificativa()">Copiar justificativa</button>
+    <button class="secondary" onclick="copiarResumo()">Copiar resumo curto</button>
+  </div>
 </section>
+
+<section class="card">
+  <h2>Detalhe da regra</h2>
+
+  <p class="note">
+    Margem mínima requerida = margem base da faixa de volume + adicional de risco quando o volume não for garantido.
+  </p>
+
+  <p class="note">
+    Faixas usadas: até 1.000 L = R$ 0,30/L; 1.001 a 5.000 L = R$ 0,25/L; 5.001 a 20.000 L = R$ 0,20/L; 20.001 a 50.000 L = R$ 0,15/L; acima de 50.000 L = R$ 0,12/L. Piso absoluto: R$ 0,10/L. Volume não garantido: +R$ 0,03/L.
+  </p>
+</section>
+
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const PISO_ABSOLUTO = 0.10;
 const RISCO_VOLUME_NAO_GARANTIDO = 0.03;
+
 let basePrecos = [];
+let itemSelecionado = null;
+let tipoPrecoSelecionado = "bomba";
+let travaAtualizacao = false;
 
-const money = v => Number.isFinite(v) ? v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:4}) : '—';
-const pct = v => Number.isFinite(v) ? (v*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%' : '—';
-const litros = v => Number.isFinite(v) ? v.toLocaleString('pt-BR',{maximumFractionDigits:0})+' L' : '—';
-const br = v => Number.isFinite(v) ? String(Number(v.toFixed(4))).replace('.',',') : '';
-const valor = id => Number(String(document.getElementById(id).value).replace(',','.')) || 0;
+const money = v => Number.isFinite(v)
+  ? v.toLocaleString("pt-BR", {
+      style:"currency",
+      currency:"BRL",
+      minimumFractionDigits:2,
+      maximumFractionDigits:4
+    })
+  : "—";
 
-function msg(texto,tipo='alert'){
-  const el=document.getElementById('msgBase');
-  if(!texto){el.className='alert 숨';el.textContent='';return;}
-  el.className=tipo==='ok'?'alert ok':'alert';
-  el.textContent=texto;
+const pct = v => Number.isFinite(v)
+  ? (v * 100).toLocaleString("pt-BR", {
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    }) + "%"
+  : "—";
+
+const litros = v => Number.isFinite(v)
+  ? v.toLocaleString("pt-BR", {maximumFractionDigits:0}) + " L"
+  : "—";
+
+const br = v => Number.isFinite(v)
+  ? Number(v.toFixed(4))
+  : "";
+
+const valor = id => {
+  const el = document.getElementById(id);
+  if(!el) return 0;
+  return Number(String(el.value).replace(",", ".")) || 0;
+};
+
+function setValor(id, valorCampo){
+  const el = document.getElementById(id);
+  if(!el) return;
+
+  if(valorCampo === null || valorCampo === undefined || valorCampo === ""){
+    el.value = "";
+    return;
+  }
+
+  if(Number.isFinite(Number(valorCampo))){
+    el.value = Number(Number(valorCampo).toFixed(4));
+  }else{
+    el.value = valorCampo;
+  }
+}
+
+function msg(texto,tipo="alert"){
+  const el = document.getElementById("msgBase");
+
+  if(!texto){
+    el.className = "alert hide";
+    el.textContent = "";
+    return;
+  }
+
+  el.className = tipo === "ok" ? "alert ok" : "alert";
+  el.textContent = texto;
 }
 
 async function iniciar(){
   try{
-    const salvo=localStorage.getItem('basePrecosFluig');
-    if(salvo){basePrecos=JSON.parse(salvo);preencherUnidades();msg('Base de preços carregada do navegador.', 'ok');return;}
-    const resp=await fetch('./precos_atuais.json',{cache:'no-store'});
-    if(resp.ok){basePrecos=await resp.json();preencherUnidades();msg('Base precos_atuais.json carregada.', 'ok');}
-  }catch(e){msg('Nenhuma base fixa encontrada. Você pode carregar a planilha .xlsx quando precisar.');}
-}
+    const resp = await fetch("./precos_atuais.json", {cache:"no-store"});
 
-async function importarExcel(event){
-  const arquivo=event.target.files[0];
-  if(!arquivo) return;
-  if(typeof XLSX==='undefined') {msg('Biblioteca de leitura Excel não carregou. Verifique a internet e tente novamente.');return;}
-  const dados=await arquivo.arrayBuffer();
-  const wb=XLSX.read(dados,{type:'array'});
-  const aba=wb.SheetNames.includes('Preços Atuais')?'Preços Atuais':wb.SheetNames[0];
-  const linhas=XLSX.utils.sheet_to_json(wb.Sheets[aba],{defval:null});
-  basePrecos=linhas.map(normalizarLinha).filter(x=>x.unidade && x.produto);
-  localStorage.setItem('basePrecosFluig',JSON.stringify(basePrecos));
-  preencherUnidades();
-  msg(`Base carregada com ${basePrecos.length} combinação(ões) de unidade/produto.`, 'ok');
+    if(!resp.ok){
+      msg("Não encontrei o arquivo precos_atuais.json. Verifique se ele está no mesmo local do index.html.");
+      return;
+    }
+
+    const dados = await resp.json();
+
+    basePrecos = dados.map(normalizarLinha).filter(x => x.unidade && x.produto);
+
+    preencherUnidades();
+
+    msg("Base de preços carregada automaticamente.", "ok");
+
+  }catch(e){
+    msg("Erro ao carregar precos_atuais.json. Verifique se o JSON está válido.");
+  }
 }
 
 function normalizarLinha(l){
   return {
-    rota:l['Rota'], codigo:l['Código'], unidade:l['Unidade'], bandeira:l['Bandeira'], classificacao:l['Classificação'], produto:l['Produto'],
-    promo:n(l['Promo']), credito:n(l['Crédito']), bomba:n(l['Bomba']), kmv:n(l['KMV']), dataVigencia:l['Data Vigência'], freteMedio:n(l['Frete Médio']),
-    custoNFast:n(l['Custo NFast']), custoNFastData:l['Custo NFast Data'], margemPromo:n(l['Margem Promo R$'])
+    rota: l.rota ?? l.Rota ?? "",
+    codigo: l.codigo ?? l["Código"] ?? "",
+    unidade: l.unidade ?? l.Unidade ?? "",
+    bandeira: l.bandeira ?? l.Bandeira ?? "",
+    classificacao: l.classificacao ?? l["Classificação"] ?? "",
+    produto: l.produto ?? l.Produto ?? "",
+
+    promo: n(l.promo ?? l.Promo),
+    credito: n(l.credito ?? l["Crédito"]),
+    bomba: n(l.bomba ?? l.Bomba),
+    kmv: n(l.kmv ?? l.KMV),
+
+    dataVigencia: l.dataVigencia ?? l["Data Vigência"] ?? "",
+    freteMedio: n(l.freteMedio ?? l["Frete Médio"]),
+    custoNFast: n(l.custoNFast ?? l["Custo NFast"]),
+    custoNFastData: l.custoNFastData ?? l["Custo NFast Data"] ?? "",
+    margemPromo: n(l.margemPromo ?? l["Margem Promo R$"])
   };
 }
-function n(v){if(v===null||v===undefined||v==='')return null;const x=Number(String(v).replace(',','.'));return Number.isFinite(x)?x:null;}
+
+function n(v){
+  if(v === null || v === undefined || v === "") return null;
+  const x = Number(String(v).replace(",", "."));
+  return Number.isFinite(x) ? x : null;
+}
 
 function preencherUnidades(){
-  const sel=document.getElementById('unidade');
-  const unidades=[...new Set(basePrecos.map(x=>x.unidade).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'pt-BR'));
-  sel.innerHTML='<option value="">Selecione a unidade</option>';
-  unidades.forEach(u=>sel.add(new Option(u,u)));
+  const sel = document.getElementById("unidade");
+
+  const unidades = [...new Set(
+    basePrecos
+      .map(x => x.unidade)
+      .filter(Boolean)
+  )].sort((a,b) => String(a).localeCompare(String(b), "pt-BR"));
+
+  sel.innerHTML = '<option value="">Selecione a unidade</option>';
+
+  unidades.forEach(u => {
+    sel.add(new Option(u,u));
+  });
+
   preencherProdutos();
 }
+
 function preencherProdutos(){
-  const unidade=document.getElementById('unidade').value;
-  const sel=document.getElementById('produto');
-  const produtos=[...new Set(basePrecos.filter(x=>x.unidade===unidade).map(x=>x.produto).filter(Boolean))].sort();
-  sel.innerHTML='<option value="">Selecione o produto</option>';
-  produtos.forEach(p=>sel.add(new Option(p,p)));
+  const unidade = document.getElementById("unidade").value;
+  const sel = document.getElementById("produto");
+
+  const produtos = [...new Set(
+    basePrecos
+      .filter(x => x.unidade === unidade)
+      .map(x => x.produto)
+      .filter(Boolean)
+  )].sort((a,b) => String(a).localeCompare(String(b), "pt-BR"));
+
+  sel.innerHTML = '<option value="">Selecione o produto</option>';
+
+  produtos.forEach(p => {
+    sel.add(new Option(p,p));
+  });
+
+  itemSelecionado = null;
+  limparDadosBase();
 }
-function aplicarPrecoSelecionado(){
-  const unidade=document.getElementById('unidade').value;
-  const produto=document.getElementById('produto').value;
-  const item=basePrecos.find(x=>x.unidade===unidade && x.produto===produto);
-  if(!item) return;
-  bandeira.value=item.bandeira||'';
-  classificacao.value=item.classificacao||'';
-  dataVigencia.value=formatarData(item.dataVigencia);
-  dataCusto.value=formatarData(item.custoNFastData);
-  normal.value=br(primeiroNumero(item.bomba,item.credito,item.promo));
-  custo.value=br(item.custoNFast);
-  precoSugerido.value=br(item.promo || item.credito || item.bomba);
+
+function aplicarProdutoSelecionado(){
+  const unidade = document.getElementById("unidade").value;
+  const produto = document.getElementById("produto").value;
+
+  itemSelecionado = basePrecos.find(x =>
+    x.unidade === unidade &&
+    x.produto === produto
+  );
+
+  if(!itemSelecionado) return;
+
+  setValor("bandeira", itemSelecionado.bandeira || "");
+  setValor("classificacao", itemSelecionado.classificacao || "");
+  setValor("dataVigencia", formatarData(itemSelecionado.dataVigencia));
+  setValor("dataCusto", formatarData(itemSelecionado.custoNFastData));
+
+  setValor("custoNFast", itemSelecionado.custoNFast || 0);
+  setValor("freteMedio", itemSelecionado.freteMedio || 0);
+
+  const custoTotal = (itemSelecionado.custoNFast || 0) + (itemSelecionado.freteMedio || 0);
+  setValor("custoTotal", custoTotal);
+
+  if(itemSelecionado.kmv !== null && itemSelecionado.kmv !== undefined){
+    setValor("concorrencia", itemSelecionado.kmv);
+  }else{
+    setValor("concorrencia", "");
+  }
+
+  atualizarPrecoBase();
+}
+
+function selecionarTipoPreco(tipo){
+  tipoPrecoSelecionado = tipo;
+
+  document.getElementById("btnPromo").classList.remove("active");
+  document.getElementById("btnCredito").classList.remove("active");
+  document.getElementById("btnBomba").classList.remove("active");
+
+  if(tipo === "promo") document.getElementById("btnPromo").classList.add("active");
+  if(tipo === "credito") document.getElementById("btnCredito").classList.add("active");
+  if(tipo === "bomba") document.getElementById("btnBomba").classList.add("active");
+
+  atualizarPrecoBase();
+}
+
+function atualizarPrecoBase(){
+  if(!itemSelecionado) return;
+
+  let preco = 0;
+
+  if(tipoPrecoSelecionado === "promo"){
+    preco = primeiroNumero(itemSelecionado.promo, itemSelecionado.credito, itemSelecionado.bomba);
+  }
+
+  if(tipoPrecoSelecionado === "credito"){
+    preco = primeiroNumero(itemSelecionado.credito, itemSelecionado.bomba, itemSelecionado.promo);
+  }
+
+  if(tipoPrecoSelecionado === "bomba"){
+    preco = primeiroNumero(itemSelecionado.bomba, itemSelecionado.credito, itemSelecionado.promo);
+  }
+
+  setValor("precoBase", preco);
+  setValor("precoSugerido", preco);
+  setValor("descontoSugerido", 0);
+
   calcular();
 }
-function primeiroNumero(...vs){return vs.find(v=>Number.isFinite(v)) ?? 0;}
-function formatarData(v){if(!v)return ''; if(v instanceof Date)return v.toLocaleDateString('pt-BR'); return String(v);}
+
+function primeiroNumero(...valores){
+  for(const v of valores){
+    if(Number.isFinite(v)) return v;
+  }
+  return 0;
+}
+
+function formatarData(v){
+  if(!v) return "";
+  return String(v);
+}
+
+function atualizarPeloPreco(){
+  if(travaAtualizacao) return;
+
+  travaAtualizacao = true;
+
+  const base = valor("precoBase");
+  const sugerido = valor("precoSugerido");
+  const desconto = base - sugerido;
+
+  setValor("descontoSugerido", desconto);
+
+  travaAtualizacao = false;
+
+  calcular();
+}
+
+function atualizarPeloDesconto(){
+  if(travaAtualizacao) return;
+
+  travaAtualizacao = true;
+
+  const base = valor("precoBase");
+  const desconto = valor("descontoSugerido");
+  const sugerido = base - desconto;
+
+  setValor("precoSugerido", sugerido);
+
+  travaAtualizacao = false;
+
+  calcular();
+}
 
 function obterMargemBase(volume){
-  if(volume<=1000) return 0.30;
-  if(volume<=5000) return 0.25;
-  if(volume<=20000) return 0.20;
-  if(volume<=50000) return 0.15;
+  if(volume <= 1000) return 0.30;
+  if(volume <= 5000) return 0.25;
+  if(volume <= 20000) return 0.20;
+  if(volume <= 50000) return 0.15;
   return 0.12;
 }
-function dataExpiracao(dias){const d=new Date();d.setDate(d.getDate()+(dias||3));return d.toLocaleDateString('pt-BR');}
 
 function calcular(){
-  const normalV=valor('normal'), custoV=valor('custo'), taxa=(valor('taxa')/100), preco=valor('precoSugerido'), concorr=valor('concorrencia');
-  const volumeAtual=valor('volumeAtual'), volumeProjetado=valor('volumeProjetado'), contribuicaoMinima=valor('contribuicaoMinima'), validade=valor('validadeDias')||3;
-  const volumeConsiderado=volumeProjetado>0?volumeProjetado:volumeAtual;
-  const precoLiquido=preco-(preco*taxa);
-  const margemLiquida=precoLiquido-custoV;
-  const margemBase=obterMargemBase(volumeConsiderado);
-  const margemContrib=volumeConsiderado>0?contribuicaoMinima/volumeConsiderado:0;
-  const risco=volumeGarantido.value==='nao'?RISCO_VOLUME_NAO_GARANTIDO:0;
-  const margemMinima=Math.max(PISO_ABSOLUTO,margemContrib,margemBase)+risco;
-  const folga=margemLiquida-margemMinima;
-  const contribuicao=margemLiquida*volumeConsiderado;
-  const custoMaximo=precoLiquido-margemMinima;
-  const precoMinimo=custoV+margemMinima+(preco*taxa);
-  const descontoMaximo=Math.max(0,normalV-precoMinimo);
-  const descontoAtual=normalV-preco;
-  const ic=concorr?(concorr-preco)/concorr:NaN;
-  desconto.value=br(descontoAtual);
+  const precoBase = valor("precoBase");
+  const preco = valor("precoSugerido");
+  const taxa = valor("taxa") / 100;
+  const custoTotal = valor("custoTotal");
+  const concorrencia = valor("concorrencia");
 
-  let nivel='Requer análise', classe='analise';
-  if(folga>=0.05){nivel='Aprovável';classe='aprovado';}
-  else if(folga>=0){nivel='Aprovar com atenção';classe='atencao';}
+  const volumeAtual = valor("volumeAtual");
+  const volumeProjetado = valor("volumeProjetado");
 
-  statusBox.className='status '+classe;
-  rNivel.textContent=nivel;
-  rResumo.textContent=`IC: ${pct(ic)} | Volume: ${litros(volumeConsiderado)} | Risco: ${risco>0?'volume não garantido':'volume garantido'}`;
-  rMargemLiquida.textContent=money(margemLiquida)+'/L';
-  rMargemMinima.textContent=money(margemMinima)+'/L';
-  rFolga.textContent=money(folga)+'/L';
-  rContribuicao.textContent=money(contribuicao);
-  rCustoMaximo.textContent=money(custoMaximo)+'/L';
-  rDescontoMaximo.textContent=money(descontoMaximo)+'/L';
-  rPrecoMinimo.textContent=money(precoMinimo)+'/L';
-  rExpiracao.textContent=dataExpiracao(validade);
-  rVolumeConsiderado.textContent=litros(volumeConsiderado);
-  justificativa.value=gerarJustificativa(nivel,margemLiquida,margemMinima,folga,contribuicao,precoMinimo,volumeConsiderado);
-}
+  const volumeConsiderado = volumeProjetado > 0 ? volumeProjetado : volumeAtual;
 
-function gerarJustificativa(nivel,margem,margemMin,folga,contrib,precoMin,volume){
-  if(nivel==='Aprovável') return `Simulação aprovada. A margem líquida de ${money(margem)}/L supera a margem mínima requerida de ${money(margemMin)}/L, com folga de segurança de ${money(folga)}/L, contribuição mensal estimada de ${money(contrib)} e volume considerado de ${litros(volume)}. Preço mínimo aprovável: ${money(precoMin)}/L.`;
-  if(nivel==='Aprovar com atenção') return `Simulação dentro do limite mínimo, porém com baixa folga de segurança. Margem líquida de ${money(margem)}/L, margem mínima requerida de ${money(margemMin)}/L e folga de ${money(folga)}/L. Recomenda-se validar volume, recorrência e risco antes da aprovação.`;
-  return `Simulação requer análise. A margem líquida de ${money(margem)}/L está abaixo da margem mínima requerida de ${money(margemMin)}/L, gerando folga negativa de ${money(folga)}/L. Recomenda-se revisar preço, custo, volume ou condição comercial.`;
-}
+  const precoLiquido = preco - (preco * taxa);
+  const margemLiquida = precoLiquido - custoTotal;
 
-function copiarJustificativa(){justificativa.select();document.execCommand('copy');}
-function limpar(){document.querySelectorAll('input').forEach(i=>{if(i.type!=='file')i.value=''});document.querySelectorAll('select').forEach(s=>s.selectedIndex=0);document.querySelectorAll('.result strong').forEach(e=>e.textContent='—');rNivel.textContent='—';rResumo.textContent='';justificativa.value='';statusBox.className='status neutro';}
+  const margemBase = obterMargemBase(volumeConsiderado);
+  const risco = document.getElementById("volumeGarantido").value === "nao"
+    ? RISCO_VOLUME_NAO_GARANTIDO
+    : 0;
 
-['normal','custo','taxa','precoSugerido','concorrencia','volumeAtual','volumeProjetado','contribuicaoMinima','volumeGarantido','validadeDias'].forEach(id=>document.getElementById(id).addEventListener('input',calcular));
-calcular();iniciar();
-if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
-</script>
-</body>
-</html>
+  const margemMinima = Math.max(PISO_ABSOLUTO, margemBase) + risco;
+
+  const folga = margemLiquida - margemMinima;
+  const contribuicao = margemLiquida * volumeConsiderado;
+
+  const precoMinimo = custoTotal + margemMinima + (preco * taxa);
+  const descontoMaximo = Math.max(0, precoBase - precoMinimo);
+  const custoMaximo = precoLiquido - margemMinima;
+
+  const ic = concorrencia ? (concorrencia - preco) / concorrencia : NaN;
+
+  let nivel = "Requer análise";
+  let classe = "analise";
+
+  if(folga >= 0.05){
+    nivel = "Aprovável";
+    classe = "aprovado";
+  }else if(folga >= 0){
+    nivel = "Aprovar com atenção";
+    classe = "atencao";
+  }
+
+  document.getElementById("statusBox").className = "status " + classe;
+  document.getElementById("rNivel").
