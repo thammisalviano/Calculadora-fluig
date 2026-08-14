@@ -1,1 +1,18 @@
-
+[
+  {
+    "unidade": "SAO JOSE",
+    "produto": "S10",
+    "bandeira": "Monte Carlo",
+    "classificacao": "RODOVIARIO",
+    "bomba": 6.89,
+    "custoNFast": 5.82
+  },
+  {
+    "unidade": "SAO JOSE",
+    "produto": "G.C.",
+    "bandeira": "Monte Carlo",
+    "classificacao": "RODOVIARIO",
+    "bomba": 6.79,
+    "custoNFast": 5.52
+  }
+]
