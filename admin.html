@@ -152,7 +152,7 @@ button{
 }
 
 textarea{
-  min-height:220px;
+  min-height:260px;
   resize:vertical;
   font-family:Consolas,monospace;
   font-size:13px;
@@ -175,6 +175,16 @@ th,td{
 
 th{
   background:#f9fafb;
+}
+
+.badge{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#eef2ff;
+  color:#3730a3;
+  font-size:12px;
+  font-weight:800;
 }
 
 @media(max-width:800px){
@@ -201,7 +211,7 @@ th{
 
   <p class="note">
     Selecione o arquivo Relatório_Regras_Ativas em formato .xlsm, .xlsx, .xls ou .xlsb.
-    A ferramenta irá ler a aba de regras e gerar o arquivo regras_ativas.json.
+    A ferramenta vai procurar automaticamente a linha de cabeçalho e gerar o arquivo regras_ativas.json.
   </p>
 
   <div class="grid">
@@ -230,16 +240,24 @@ th{
 </section>
 
 <section class="card">
-  <h2>2. Prévia dos dados convertidos</h2>
+  <h2>2. Diagnóstico da leitura</h2>
   <p class="note">
-    Abaixo aparecem os primeiros registros convertidos. Use esta prévia para validar se Cliente, Produto, Unidade e Média 3M vieram corretamente.
+    Esta área mostra qual aba foi lida, onde o cabeçalho foi encontrado e quais colunas foram detectadas.
+  </p>
+  <div id="diagnostico"></div>
+</section>
+
+<section class="card">
+  <h2>3. Prévia dos dados convertidos</h2>
+  <p class="note">
+    Abaixo aparecem os primeiros registros convertidos. Use esta prévia para validar se Cliente, Produto, Unidade, Volume, Taxa e Margem vieram corretamente.
   </p>
 
   <div id="preview"></div>
 </section>
 
 <section class="card">
-  <h2>3. JSON gerado</h2>
+  <h2>4. JSON gerado</h2>
   <textarea id="jsonSaida" readonly></textarea>
 </section>
 
@@ -286,50 +304,75 @@ async function importarRegras(event){
 
     const wb = XLSX.read(dados,{
       type:"array",
-      cellDates:false,
+      cellDates:true,
+      cellNF:true,
+      cellText:true,
+      dense:true
+    });
+
+    console.log("ABAS ENCONTRADAS:");
+    console.log(wb.SheetNames);
+
+    const aba = escolherAba(wb);
+
+    if(!aba){
+      msg("Não foi possível encontrar uma aba válida no arquivo.","error");
+      return;
+    }
+
+    const sheet = wb.Sheets[aba];
+
+    console.log("ABA USADA:", aba);
+    console.log("SHEET:");
+    console.log(sheet);
+    console.log("RANGE:");
+    console.log(sheet ? sheet["!ref"] : undefined);
+
+    const bruto = XLSX.utils.sheet_to_json(sheet,{
+      header:1,
+      defval:"",
+      blankrows:false,
       raw:false
     });
 
-    const aba =
-      encontrarAba(wb.SheetNames, [
-        "Regra de preços",
-        "Regras de preço",
-        "Regras",
-        "Relatório",
-        "Relatorio"
-      ]) || wb.SheetNames[0];
+    console.log("TOTAL LINHAS BRUTAS:", bruto.length);
+    console.log("PRIMEIRAS 20 LINHAS:");
+    console.log(bruto.slice(0,20));
 
-const sheet = wb.Sheets[aba];
+    if(!bruto.length){
+      limparResultado();
+      montarDiagnostico({
+        aba,
+        totalBruto:0,
+        linhaCabecalho:null,
+        colunas:[]
+      });
 
-const bruto = XLSX.utils.sheet_to_json(
-  sheet,
-  {
-    header:1,
-    defval:""
-  }
-);
+      msg("A aba foi encontrada, mas não trouxe linhas legíveis. Tente salvar o relatório como .xlsx comum ou exportar a aba como CSV.","error");
+      return;
+    }
 
-console.log("ABA:", aba);
-console.log("TOTAL LINHAS BRUTAS:", bruto.length);
+    const indiceCabecalho = encontrarLinhaCabecalho(bruto);
 
-console.log("PRIMEIRAS 20 LINHAS:");
-console.log(bruto.slice(0,20));
+    if(indiceCabecalho === -1){
+      limparResultado();
+      montarDiagnostico({
+        aba,
+        totalBruto:bruto.length,
+        linhaCabecalho:null,
+        colunas:[]
+      });
 
-const linhas = XLSX.utils.sheet_to_json(sheet,{
-  defval:"",
-  raw:false
-});
-console.log("ABA:", aba);
-console.log("TOTAL LINHAS:", linhas.length);
+      msg("Não encontrei uma linha de cabeçalho com Cliente, Produto ou Unidade. Verifique se a aba correta foi usada.","error");
+      return;
+    }
 
-if(linhas.length > 0){
-  console.log("PRIMEIRA LINHA:");
-  console.log(linhas[0]);
+    const cabecalhos = bruto[indiceCabecalho].map(c => texto(c));
+    const linhasDados = bruto.slice(indiceCabecalho + 1);
 
-  console.log("COLUNAS:");
-  console.log(Object.keys(linhas[0]));
-}
-    regrasConvertidas = linhas
+    const objetos = linhasDados.map(linha => linhaParaObjeto(cabecalhos, linha));
+
+    regrasConvertidas = objetos
       .map(normalizarRegra)
       .filter(r => r.cliente);
 
@@ -338,10 +381,17 @@ if(linhas.length > 0){
     document.getElementById("totalRegistros").value = regrasConvertidas.length;
     document.getElementById("jsonSaida").value = jsonGerado;
 
+    montarDiagnostico({
+      aba,
+      totalBruto:bruto.length,
+      linhaCabecalho:indiceCabecalho + 1,
+      colunas:cabecalhos.filter(Boolean)
+    });
+
     montarPreview(regrasConvertidas);
 
     if(regrasConvertidas.length === 0){
-      msg("Nenhum registro válido encontrado. Verifique se a aba possui a coluna Cliente.","error");
+      msg("O cabeçalho foi encontrado, mas nenhum registro com Cliente foi convertido. Veja o diagnóstico e a prévia.","error");
     }else{
       msg("Arquivo convertido com sucesso. Confira a prévia e baixe o regras_ativas.json.","ok");
     }
@@ -352,131 +402,86 @@ if(linhas.length > 0){
   }
 }
 
-function encontrarAba(abas, nomesPossiveis){
-  const abasNorm = abas.map(a => ({
-    original:a,
-    norm:normalizarTexto(a)
-  }));
+function escolherAba(wb){
+  const nomesPreferidos = [
+    "Regra de preços",
+    "Regras de preço",
+    "Regras Ativas",
+    "Relatório_Regras_Ativas",
+    "Relatório",
+    "Relatorio",
+    "Base Clientes",
+    "Clientes"
+  ];
 
-  for(const nome of nomesPossiveis){
-    const alvo = normalizarTexto(nome);
-    const achada = abasNorm.find(a => a.norm.includes(alvo));
-    if(achada) return achada.original;
+  for(const nome of nomesPreferidos){
+    const encontrada = wb.SheetNames.find(a =>
+      normalizarTexto(a).includes(normalizarTexto(nome))
+    );
+
+    if(encontrada){
+      return encontrada;
+    }
   }
 
-  return null;
+  return wb.SheetNames[0] || null;
+}
+
+function encontrarLinhaCabecalho(matriz){
+  for(let i = 0; i < matriz.length; i++){
+    const linha = matriz[i].map(c => normalizarTexto(c));
+
+    const temCliente = linha.some(c => c === "CLIENTE");
+    const temProduto = linha.some(c => c === "PRODUTO" || c === "PRODUTO SHORT" || c === "PRODUTO (SHORT)");
+    const temUnidade = linha.some(c => c === "UNIDADE" || c === "COD UNIDADE" || c === "COD. UNIDADE" || c === "CODIGO UNIDADE");
+
+    if(temCliente && (temProduto || temUnidade)){
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+function linhaParaObjeto(cabecalhos, linha){
+  const obj = {};
+
+  cabecalhos.forEach((cabecalho, idx) => {
+    const chave = cabecalho || ("COLUNA_" + idx);
+    obj[chave] = linha[idx] ?? "";
+  });
+
+  return obj;
 }
 
 function normalizarRegra(l){
-  const cliente = texto(pegar(l,[
-    "Cliente",
-    "cliente"
-  ]));
-
-  const grupoCliente = texto(pegar(l,[
-    "Grupo Cliente",
-    "grupo_cliente",
-    "Grupo"
-  ]));
-
-  const gestorConta = texto(pegar(l,[
-    "Gestor Conta",
-    "gestor_conta",
-    "Gestor",
-    "Vendedor",
-    "Responsável",
-    "Responsavel"
-  ]));
-
-  const status = texto(pegar(l,[
-    "Status",
-    "status"
-  ]));
-
-  const classificacao = texto(pegar(l,[
-    "Classificação",
-    "Classificacao",
-    "classificacao"
-  ]));
-
-  const produto = texto(pegar(l,[
-    "Produto",
-    "produto",
-    "Produto (Short)"
-  ]));
-
-  const unidade = texto(pegar(l,[
-    "Unidade",
-    "unidade",
-    "Posto"
-  ]));
-
-  const formaPagamento = texto(pegar(l,[
-    "Forma Pagamento",
-    "Forma de Pagamento",
-    "forma_pagamento",
-    "Pagamento"
-  ]));
-
-  const precoRegra = numero(pegar(l,[
-    "Preço Regra",
-    "Preco Regra",
-    "preco_regra",
-    "Valor"
-  ]));
-
-  const precoPromo = numero(pegar(l,[
-    "Preço Promo",
-    "Preco Promo",
-    "preco_promo"
-  ]));
-
-  const precoB2B = numero(pegar(l,[
-    "Preço B2B",
-    "Preco B2B",
-    "preco_b2b"
-  ]));
-
-  const cmv = numero(pegar(l,[
-    "Custo CMV",
-    "CMV",
-    "cmv",
-    "Custo"
-  ]));
-
-  const media3m = numero(pegar(l,[
-    "Média ult. 3 meses",
-    "Media ult. 3 meses",
-    "Média últimos 3 meses",
-    "Media ultimos 3 meses",
-    "media_3m"
-  ]));
-
-  const volumeJan26 = numero(pegar(l,[
-    "Volume Cliente Jan/26",
-    "Volume Jan/26",
-    "Jan/26"
-  ]));
-
-  const volumeJan27 = numero(pegar(l,[
-    "Volume Cliente Jan/27",
-    "Volume Jan/27",
-    "Jan/27"
-  ]));
-
   const codigoRegra = texto(pegar(l,[
     "Código",
     "Codigo",
     "Regra",
-    "codigo"
+    "codigo_regra"
   ]));
 
-  const codCliente = texto(pegar(l,[
-    "Cód. Cliente",
-    "Cod. Cliente",
-    "Código Cliente",
-    "Codigo Cliente",
-    "cod_cliente"
+  const regra = texto(pegar(l,[
+    "Regra"
+  ]));
+
+  const tipo = texto(pegar(l,[
+    "Tipo"
+  ]));
+
+  const valor = numero(pegar(l,[
+    "Valor"
+  ]));
+
+  const produto = texto(pegar(l,[
+    "Produto"
+  ]));
+
+  const produtoShort = texto(pegar(l,[
+    "Produto (Short)",
+    "Produto Short",
+    "produto_short"
   ]));
 
   const codUnidade = texto(pegar(l,[
@@ -487,30 +492,195 @@ function normalizarRegra(l){
     "cod_unidade"
   ]));
 
+  const unidade = texto(pegar(l,[
+    "Unidade"
+  ]));
+
+  const rotas = texto(pegar(l,[
+    "Rotas",
+    "Rota"
+  ]));
+
+  const bandeira = texto(pegar(l,[
+    "Bandeira"
+  ]));
+
+  const codCliente = texto(pegar(l,[
+    "Cód. Cliente",
+    "Cod. Cliente",
+    "Código Cliente",
+    "Codigo Cliente",
+    "cod_cliente"
+  ]));
+
+  const cliente = texto(pegar(l,[
+    "Cliente"
+  ]));
+
+  const grupoCliente = texto(pegar(l,[
+    "Grupo Cliente",
+    "Grupo"
+  ]));
+
+  const gestorConta = texto(pegar(l,[
+    "Gestor Conta",
+    "Gestor",
+    "Vendedor",
+    "Responsável",
+    "Responsavel"
+  ]));
+
+  const valorDescontado = numero(pegar(l,[
+    "Valor Descontado"
+  ]));
+
+  const formaPagamento = texto(pegar(l,[
+    "Forma Pagamento",
+    "Forma de Pagamento",
+    "Pagamento"
+  ]));
+
+  const status = texto(pegar(l,[
+    "Status"
+  ]));
+
+  const classificacao = texto(pegar(l,[
+    "Classificação",
+    "Classificacao"
+  ]));
+
+  const precoRegra = numero(pegar(l,[
+    "Preço Regra",
+    "Preco Regra"
+  ]));
+
+  const precoPromo = numero(pegar(l,[
+    "Preço Promo",
+    "Preco Promo"
+  ]));
+
+  const precoB2B = numero(pegar(l,[
+    "Preço B2B",
+    "Preco B2B"
+  ]));
+
+  const volumeClienteJan27 = numero(pegar(l,[
+    "Volume Cliente Jan/27",
+    "Volume Jan/27",
+    "Jan/27"
+  ]));
+
+  const cmvFrete = numero(pegar(l,[
+    "CMV + Frete",
+    "CMV+Frete",
+    "CMV Frete"
+  ]));
+
+  const custoNfastFrete = numero(pegar(l,[
+    "CUSTO NFAST + Frete",
+    "Custo NFast + Frete",
+    "Custo NFAST Frete",
+    "CUSTO NFAST Frete"
+  ]));
+
+  const custoReferenciaFrete = numero(pegar(l,[
+    "CUSTO REFERÊNCIA + Frete",
+    "CUSTO REFERENCIA + Frete",
+    "Custo Referência + Frete",
+    "Custo Referencia + Frete"
+  ]));
+
+  const taxaCtf = numero(pegar(l,[
+    "Taxa CTF",
+    " Taxa CTF ",
+    "taxa_ctf"
+  ]));
+
+  const precoLiquidoTaxa = numero(pegar(l,[
+    "Preço Líquido Taxa",
+    "Preco Liquido Taxa",
+    "preco_liquido_taxa"
+  ]));
+
+  const unitariaCmv = numero(pegar(l,[
+    "Unitária CMV",
+    "Unitaria CMV"
+  ]));
+
+  const unitariaNfast = numero(pegar(l,[
+    "Unitária Nfast",
+    "Unitária NFast",
+    "Unitaria Nfast",
+    "Unitaria NFast"
+  ]));
+
+  const margemPrincipal = numero(pegar(l,[
+    "Margem Principal",
+    "margem_principal"
+  ]));
+
+  const segmento = texto(pegar(l,[
+    "Segmento"
+  ]));
+
+  const volumeRegra = numero(pegar(l,[
+    "Volume Regra 05_06.26",
+    "Volume Regra 05/06.26",
+    "Volume Regra",
+    "volume_regra"
+  ]));
+
+  const impactoPrincipal = numero(pegar(l,[
+    "Impacto Principal R$",
+    "Impacto Principal",
+    "impacto_principal"
+  ]));
+
   return {
     codigo_regra: codigoRegra,
+    regra: regra,
+    tipo: tipo,
+    valor: valor,
+
     cod_cliente: codCliente,
     cliente: cliente,
     grupo_cliente: grupoCliente,
     gestor_conta: gestorConta,
+    segmento: segmento,
 
     status: status,
     classificacao: classificacao,
 
     produto: produto,
-    unidade: unidade,
+    produto_short: produtoShort,
+
     cod_unidade: codUnidade,
+    unidade: unidade,
+    rotas: rotas,
+    bandeira: bandeira,
+
     forma_pagamento: formaPagamento,
+    valor_descontado: valorDescontado,
 
     preco_regra: precoRegra,
     preco_promo: precoPromo,
     preco_b2b: precoB2B,
-    cmv: cmv,
 
-    volume_jan_2026: volumeJan26,
-    volume_jan_2027: volumeJan27,
+    volume_cliente: volumeClienteJan27,
+    volume_regra: volumeRegra,
 
-    media_3m: media3m
+    cmv_frete: cmvFrete,
+    custo_nfast_frete: custoNfastFrete,
+    custo_referencia_frete: custoReferenciaFrete,
+
+    taxa_ctf: taxaCtf,
+    preco_liquido_taxa: precoLiquidoTaxa,
+
+    unitaria_cmv: unitariaCmv,
+    unitaria_nfast: unitariaNfast,
+
+    margem_principal: margemPrincipal,
+    impacto_principal: impactoPrincipal
   };
 }
 
@@ -553,9 +723,10 @@ function numero(v){
   if(!s) return null;
 
   s = s.replace(/\s/g,"");
+  s = s.replace("R$","");
 
-  if(s.includes("R$")){
-    s = s.replace("R$","");
+  if(s === "#VALOR!" || s === "#N/D" || s === "#DIV/0!"){
+    return null;
   }
 
   if(s.includes(".") && s.includes(",")){
@@ -574,8 +745,25 @@ function normalizarTexto(v){
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g,"")
     .replace(/\s+/g," ")
+    .replace(/\./g,"")
     .trim()
     .toUpperCase();
+}
+
+function montarDiagnostico(info){
+  const el = document.getElementById("diagnostico");
+
+  let html = "";
+  html += "<p><span class='badge'>Aba usada</span> " + escapeHtml(info.aba || "") + "</p>";
+  html += "<p><span class='badge'>Total linhas brutas</span> " + escapeHtml(info.totalBruto ?? "") + "</p>";
+  html += "<p><span class='badge'>Linha do cabeçalho</span> " + escapeHtml(info.linhaCabecalho || "Não encontrada") + "</p>";
+
+  if(info.colunas && info.colunas.length){
+    html += "<p><span class='badge'>Colunas detectadas</span></p>";
+    html += "<div class='note'>" + info.colunas.map(escapeHtml).join(" | ") + "</div>";
+  }
+
+  el.innerHTML = html;
 }
 
 function montarPreview(dados){
@@ -594,9 +782,12 @@ function montarPreview(dados){
   html += "<th>Produto</th>";
   html += "<th>Unidade</th>";
   html += "<th>Forma Pagamento</th>";
-  html += "<th>Status</th>";
-  html += "<th>Classificação</th>";
-  html += "<th>Média 3M</th>";
+  html += "<th>Volume Cliente</th>";
+  html += "<th>Preço Regra</th>";
+  html += "<th>Preço Promo</th>";
+  html += "<th>CMV + Frete</th>";
+  html += "<th>Taxa CTF</th>";
+  html += "<th>Margem Principal</th>";
   html += "</tr></thead><tbody>";
 
   amostra.forEach(r => {
@@ -605,9 +796,12 @@ function montarPreview(dados){
     html += "<td>" + escapeHtml(r.produto) + "</td>";
     html += "<td>" + escapeHtml(r.unidade) + "</td>";
     html += "<td>" + escapeHtml(r.forma_pagamento) + "</td>";
-    html += "<td>" + escapeHtml(r.status) + "</td>";
-    html += "<td>" + escapeHtml(r.classificacao) + "</td>";
-    html += "<td>" + formatarNumero(r.media_3m) + "</td>";
+    html += "<td>" + formatarNumero(r.volume_cliente) + "</td>";
+    html += "<td>" + formatarNumero(r.preco_regra) + "</td>";
+    html += "<td>" + formatarNumero(r.preco_promo) + "</td>";
+    html += "<td>" + formatarNumero(r.cmv_frete) + "</td>";
+    html += "<td>" + formatarNumero(r.taxa_ctf) + "</td>";
+    html += "<td>" + formatarNumero(r.margem_principal) + "</td>";
     html += "</tr>";
   });
 
@@ -628,7 +822,7 @@ function escapeHtml(v){
 function formatarNumero(v){
   if(!Number.isFinite(v)) return "";
   return v.toLocaleString("pt-BR",{
-    maximumFractionDigits:2
+    maximumFractionDigits:4
   });
 }
 
@@ -652,6 +846,15 @@ function baixarJson(){
   URL.revokeObjectURL(url);
 }
 
+function limparResultado(){
+  regrasConvertidas = [];
+  jsonGerado = "";
+
+  document.getElementById("totalRegistros").value = "";
+  document.getElementById("jsonSaida").value = "";
+  document.getElementById("preview").innerHTML = "";
+}
+
 function limpar(){
   regrasConvertidas = [];
   jsonGerado = "";
@@ -660,6 +863,7 @@ function limpar(){
   document.getElementById("totalRegistros").value = "";
   document.getElementById("jsonSaida").value = "";
   document.getElementById("preview").innerHTML = "";
+  document.getElementById("diagnostico").innerHTML = "";
 
   msg("");
 }
@@ -667,4 +871,3 @@ function limpar(){
 
 </body>
 </html>
-
