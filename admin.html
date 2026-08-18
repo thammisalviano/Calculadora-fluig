@@ -305,7 +305,16 @@ async function importarRegras(event){
       defval:"",
       raw:false
     });
+console.log("ABA:", aba);
+console.log("TOTAL LINHAS:", linhas.length);
 
+if(linhas.length > 0){
+  console.log("PRIMEIRA LINHA:");
+  console.log(linhas[0]);
+
+  console.log("COLUNAS:");
+  console.log(Object.keys(linhas[0]));
+}
     regrasConvertidas = linhas
       .map(normalizarRegra)
       .filter(r => r.cliente);
