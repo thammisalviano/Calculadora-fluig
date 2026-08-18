@@ -299,12 +299,26 @@ async function importarRegras(event){
         "Relatorio"
       ]) || wb.SheetNames[0];
 
-    const sheet = wb.Sheets[aba];
+const sheet = wb.Sheets[aba];
 
-    const linhas = XLSX.utils.sheet_to_json(sheet,{
-      defval:"",
-      raw:false
-    });
+const bruto = XLSX.utils.sheet_to_json(
+  sheet,
+  {
+    header:1,
+    defval:""
+  }
+);
+
+console.log("ABA:", aba);
+console.log("TOTAL LINHAS BRUTAS:", bruto.length);
+
+console.log("PRIMEIRAS 20 LINHAS:");
+console.log(bruto.slice(0,20));
+
+const linhas = XLSX.utils.sheet_to_json(sheet,{
+  defval:"",
+  raw:false
+});
 console.log("ABA:", aba);
 console.log("TOTAL LINHAS:", linhas.length);
 
