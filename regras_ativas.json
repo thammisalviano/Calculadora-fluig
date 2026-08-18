@@ -1,25 +1,35 @@
-[
-  {
-    "cliente": "MAKFIL",
-    "grupo_cliente": "GRANDES CLIENTES",
-    "gestor_conta": "ROGERIO",
+{
+  "codigo_regra": "12345",
+  "cod_cliente": "2810003",
 
-    "status": "ATIVO",
-    "classificacao": "CURVA A",
+  "cliente": "MAKFIL",
+  "grupo_cliente": "GRANDES CLIENTES",
+  "gestor_conta": "ROGERIO",
 
-    "produto": "DIESEL S10",
-    "unidade": "SAO JOSE",
-    "forma_pagamento": "TRUCKPAG",
+  "segmento": "TRANSPORTADORA",
 
-    "preco_regra": 5.89,
-    "preco_promo": 5.85,
-    "preco_b2b": 5.87,
-    "cmv": 5.21,
+  "produto": "DIESEL S10",
+  "produto_short": "S10",
 
-    "volume_jun_2026": 18000,
-    "volume_jul_2026": 19000,
-    "volume_ago_2026": 19889,
+  "cod_unidade": "44",
+  "unidade": "SAO JOSE",
 
-    "media_3m": 18963
-  }
-]
+  "bandeira": "SHELL",
+
+  "forma_pagamento": "TRUCKPAG",
+
+  "preco_regra": 5.89,
+  "preco_promo": 5.85,
+
+  "volume_cliente": 18963,
+
+  "cmv_frete": 5.21,
+
+  "taxa_ctf": 2.50,
+
+  "preco_liquido_taxa": 5.74,
+
+  "margem_principal": 0.38,
+
+  "impacto_principal": 7209.14
+}
