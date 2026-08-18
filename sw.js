@@ -1,4 +1,4 @@
-const CACHE='fluig-v31';
+const CACHE='fluig-v40';
 
 const ASSETS=[
  './',
