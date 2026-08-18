@@ -745,10 +745,9 @@ let basePrecos = [];
 let baseRegras = [];
 
 let itemSelecionado = null;
-let regraSelecionada = null;
-
 let tipoPrecoSelecionado = "bomba";
 let travaAtualizacao = false;
+let jsonGerado = "";
 
 const money = v => Number.isFinite(v)
   ? v.toLocaleString("pt-BR", {
@@ -819,33 +818,68 @@ function msgRegra(texto,tipo="alert"){
 }
 
 async function iniciar(){
-  await carregarBasePrecos();
-  await carregarBaseRegras();
 
-  preencherUnidades();
-  preencherListaClientes();
-
-  calcular();
-}
-
-async function carregarBasePrecos(){
   try{
-    const resp = await fetch("./precos_atuais.json", {cache:"no-store"});
 
-    if(!resp.ok){
-      msgBase("Não encontrei o arquivo precos_atuais.json. Verifique se ele está no mesmo local do index.html.");
+    const respPrecos =
+      await fetch("./precos_atuais.json",
+      {cache:"no-store"});
+
+    if(!respPrecos.ok){
+      msg("Não encontrei o arquivo precos_atuais.json.");
       return;
     }
 
-    const dados = await resp.json();
+    const dadosPrecos =
+      await respPrecos.json();
 
-    basePrecos = dados.map(normalizarLinhaPreco).filter(x => x.unidade && x.produto);
+    basePrecos =
+      dadosPrecos
+        .map(normalizarLinha)
+        .filter(x => x.unidade && x.produto);
 
-    msgBase("Base de preços carregada automaticamente.", "ok");
+    jsonGerado =
+      JSON.stringify(basePrecos, null, 2);
+
+    preencherUnidades();
+
+    msg("Base de preços carregada automaticamente.",
+      "ok");
 
   }catch(e){
-    msgBase("Erro ao carregar precos_atuais.json. Verifique se o JSON está válido.");
+
+    msg("Erro ao carregar precos_atuais.json.");
+
   }
+
+  try{
+
+    const respRegras =
+      await fetch("./regras_ativas.json",
+      {cache:"no-store"});
+
+    if(!respRegras.ok){
+      console.log("regras_ativas.json não encontrado");
+      return;
+    }
+
+    baseRegras =
+      await respRegras.json();
+
+    console.log(
+      "Regras carregadas:",
+      baseRegras
+    );
+
+  }catch(e){
+
+    console.error(
+      "Erro ao carregar regras:",
+      e
+    );
+
+  }
+
 }
 
 async function carregarBaseRegras(){
