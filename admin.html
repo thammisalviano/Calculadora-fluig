@@ -1,1 +1,647 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin - Calculadora FLUIG</title>
+
+<style>
+*{box-sizing:border-box}
+
+:root{
+  --bg:#f3f4f6;
+  --ink:#111827;
+  --muted:#6b7280;
+  --line:#e5e7eb;
+  --card:#ffffff;
+  --green:#047857;
+  --red:#b91c1c;
+  --yellow:#b45309;
+}
+
+body{
+  margin:0;
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+}
+
+.app{
+  max-width:1100px;
+  margin:auto;
+  padding:20px;
+}
+
+header{
+  background:linear-gradient(135deg,#111827,#1f2937);
+  color:#fff;
+  border-radius:22px;
+  padding:24px;
+  margin-bottom:16px;
+}
+
+h1{
+  margin:0 0 6px;
+  font-size:26px;
+}
+
+header p{
+  margin:0;
+  color:#d1d5db;
+  line-height:1.45;
+}
+
+.card{
+  background:var(--card);
+  border-radius:18px;
+  padding:18px;
+  margin-bottom:16px;
+  box-shadow:0 4px 18px #0000000d;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+
+label{
+  display:block;
+  font-size:13px;
+  font-weight:800;
+  margin-bottom:6px;
+  color:#374151;
+}
+
+input,
+select,
+textarea{
+  width:100%;
+  padding:13px;
+  border:1px solid #d1d5db;
+  border-radius:12px;
+  font-size:15px;
+  outline:none;
+  background:#fff;
+  color:#111827;
+}
+
+input[readonly],
+textarea[readonly]{
+  background:#f9fafb;
+  color:#4b5563;
+}
+
+button{
+  border:0;
+  border-radius:12px;
+  padding:13px 16px;
+  font-weight:900;
+  font-size:15px;
+  cursor:pointer;
+}
+
+.primary{
+  background:#111827;
+  color:#fff;
+}
+
+.secondary{
+  background:#e5e7eb;
+  color:#111827;
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:15px;
+  flex-wrap:wrap;
+}
+
+.note{
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.5;
+}
+
+.alert{
+  padding:12px;
+  border-radius:12px;
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  color:#9a3412;
+  font-size:13px;
+  font-weight:700;
+  margin-top:10px;
+}
+
+.ok{
+  background:#ecfdf5;
+  border-color:#a7f3d0;
+  color:#047857;
+}
+
+.error{
+  background:#fef2f2;
+  border-color:#fecaca;
+  color:#b91c1c;
+}
+
+.hide{
+  display:none!important;
+}
+
+textarea{
+  min-height:220px;
+  resize:vertical;
+  font-family:Consolas,monospace;
+  font-size:13px;
+  line-height:1.45;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:12px;
+  font-size:13px;
+}
+
+th,td{
+  border:1px solid var(--line);
+  padding:8px;
+  text-align:left;
+  vertical-align:top;
+}
+
+th{
+  background:#f9fafb;
+}
+
+@media(max-width:800px){
+  .grid{
+    grid-template-columns:1fr;
+  }
+  .app{
+    padding:12px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<header>
+  <h1>Admin - Calculadora FLUIG</h1>
+  <p>Área para converter o relatório de regras ativas em regras_ativas.json.</p>
+</header>
+
+<section class="card">
+  <h2>1. Upload do relatório de regras ativas</h2>
+
+  <p class="note">
+    Selecione o arquivo Relatório_Regras_Ativas em formato .xlsm, .xlsx, .xls ou .xlsb.
+    A ferramenta irá ler a aba de regras e gerar o arquivo regras_ativas.json.
+  </p>
+
+  <div class="grid">
+    <div>
+      <label for="arquivoRegras">Arquivo de regras</label>
+      <input id="arquivoRegras" type="file" accept=".xlsm,.xlsx,.xls,.xlsb" onchange="importarRegras(event)">
+    </div>
+
+    <div>
+      <label>Total de registros encontrados</label>
+      <input id="totalRegistros" readonly>
+    </div>
+
+    <div>
+      <label>Arquivo gerado</label>
+      <input id="nomeArquivo" value="regras_ativas.json" readonly>
+    </div>
+  </div>
+
+  <div id="msg" class="alert hide"></div>
+
+  <div class="actions">
+    <button class="primary" onclick="baixarJson()">Baixar regras_ativas.json</button>
+    <button class="secondary" onclick="limpar()">Limpar</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>2. Prévia dos dados convertidos</h2>
+  <p class="note">
+    Abaixo aparecem os primeiros registros convertidos. Use esta prévia para validar se Cliente, Produto, Unidade e Média 3M vieram corretamente.
+  </p>
+
+  <div id="preview"></div>
+</section>
+
+<section class="card">
+  <h2>3. JSON gerado</h2>
+  <textarea id="jsonSaida" readonly></textarea>
+</section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script>
+let regrasConvertidas = [];
+let jsonGerado = "";
+
+function msg(texto,tipo="alert"){
+  const el = document.getElementById("msg");
+
+  if(!texto){
+    el.className = "alert hide";
+    el.textContent = "";
+    return;
+  }
+
+  if(tipo === "ok"){
+    el.className = "alert ok";
+  }else if(tipo === "error"){
+    el.className = "alert error";
+  }else{
+    el.className = "alert";
+  }
+
+  el.textContent = texto;
+}
+
+async function importarRegras(event){
+  const arquivo = event.target.files[0];
+
+  if(!arquivo) return;
+
+  if(typeof XLSX === "undefined"){
+    msg("A biblioteca de leitura do Excel não carregou. Verifique a internet e tente novamente.","error");
+    return;
+  }
+
+  try{
+    const dados = await arquivo.arrayBuffer();
+
+    const wb = XLSX.read(dados,{
+      type:"array",
+      cellDates:false,
+      raw:false
+    });
+
+    const aba =
+      encontrarAba(wb.SheetNames, [
+        "Regra de preços",
+        "Regras de preço",
+        "Regras",
+        "Relatório",
+        "Relatorio"
+      ]) || wb.SheetNames[0];
+
+    const sheet = wb.Sheets[aba];
+
+    const linhas = XLSX.utils.sheet_to_json(sheet,{
+      defval:"",
+      raw:false
+    });
+
+    regrasConvertidas = linhas
+      .map(normalizarRegra)
+      .filter(r => r.cliente);
+
+    jsonGerado = JSON.stringify(regrasConvertidas,null,2);
+
+    document.getElementById("totalRegistros").value = regrasConvertidas.length;
+    document.getElementById("jsonSaida").value = jsonGerado;
+
+    montarPreview(regrasConvertidas);
+
+    if(regrasConvertidas.length === 0){
+      msg("Nenhum registro válido encontrado. Verifique se a aba possui a coluna Cliente.","error");
+    }else{
+      msg("Arquivo convertido com sucesso. Confira a prévia e baixe o regras_ativas.json.","ok");
+    }
+
+  }catch(e){
+    console.error(e);
+    msg("Erro ao processar o arquivo. Verifique se o Excel está íntegro e tente novamente.","error");
+  }
+}
+
+function encontrarAba(abas, nomesPossiveis){
+  const abasNorm = abas.map(a => ({
+    original:a,
+    norm:normalizarTexto(a)
+  }));
+
+  for(const nome of nomesPossiveis){
+    const alvo = normalizarTexto(nome);
+    const achada = abasNorm.find(a => a.norm.includes(alvo));
+    if(achada) return achada.original;
+  }
+
+  return null;
+}
+
+function normalizarRegra(l){
+  const cliente = texto(pegar(l,[
+    "Cliente",
+    "cliente"
+  ]));
+
+  const grupoCliente = texto(pegar(l,[
+    "Grupo Cliente",
+    "grupo_cliente",
+    "Grupo"
+  ]));
+
+  const gestorConta = texto(pegar(l,[
+    "Gestor Conta",
+    "gestor_conta",
+    "Gestor",
+    "Vendedor",
+    "Responsável",
+    "Responsavel"
+  ]));
+
+  const status = texto(pegar(l,[
+    "Status",
+    "status"
+  ]));
+
+  const classificacao = texto(pegar(l,[
+    "Classificação",
+    "Classificacao",
+    "classificacao"
+  ]));
+
+  const produto = texto(pegar(l,[
+    "Produto",
+    "produto",
+    "Produto (Short)"
+  ]));
+
+  const unidade = texto(pegar(l,[
+    "Unidade",
+    "unidade",
+    "Posto"
+  ]));
+
+  const formaPagamento = texto(pegar(l,[
+    "Forma Pagamento",
+    "Forma de Pagamento",
+    "forma_pagamento",
+    "Pagamento"
+  ]));
+
+  const precoRegra = numero(pegar(l,[
+    "Preço Regra",
+    "Preco Regra",
+    "preco_regra",
+    "Valor"
+  ]));
+
+  const precoPromo = numero(pegar(l,[
+    "Preço Promo",
+    "Preco Promo",
+    "preco_promo"
+  ]));
+
+  const precoB2B = numero(pegar(l,[
+    "Preço B2B",
+    "Preco B2B",
+    "preco_b2b"
+  ]));
+
+  const cmv = numero(pegar(l,[
+    "Custo CMV",
+    "CMV",
+    "cmv",
+    "Custo"
+  ]));
+
+  const media3m = numero(pegar(l,[
+    "Média ult. 3 meses",
+    "Media ult. 3 meses",
+    "Média últimos 3 meses",
+    "Media ultimos 3 meses",
+    "media_3m"
+  ]));
+
+  const volumeJan26 = numero(pegar(l,[
+    "Volume Cliente Jan/26",
+    "Volume Jan/26",
+    "Jan/26"
+  ]));
+
+  const volumeJan27 = numero(pegar(l,[
+    "Volume Cliente Jan/27",
+    "Volume Jan/27",
+    "Jan/27"
+  ]));
+
+  const codigoRegra = texto(pegar(l,[
+    "Código",
+    "Codigo",
+    "Regra",
+    "codigo"
+  ]));
+
+  const codCliente = texto(pegar(l,[
+    "Cód. Cliente",
+    "Cod. Cliente",
+    "Código Cliente",
+    "Codigo Cliente",
+    "cod_cliente"
+  ]));
+
+  const codUnidade = texto(pegar(l,[
+    "Cód. Unidade",
+    "Cod. Unidade",
+    "Código Unidade",
+    "Codigo Unidade",
+    "cod_unidade"
+  ]));
+
+  return {
+    codigo_regra: codigoRegra,
+    cod_cliente: codCliente,
+    cliente: cliente,
+    grupo_cliente: grupoCliente,
+    gestor_conta: gestorConta,
+
+    status: status,
+    classificacao: classificacao,
+
+    produto: produto,
+    unidade: unidade,
+    cod_unidade: codUnidade,
+    forma_pagamento: formaPagamento,
+
+    preco_regra: precoRegra,
+    preco_promo: precoPromo,
+    preco_b2b: precoB2B,
+    cmv: cmv,
+
+    volume_jan_2026: volumeJan26,
+    volume_jan_2027: volumeJan27,
+
+    media_3m: media3m
+  };
+}
+
+function pegar(obj, nomes){
+  const chaves = Object.keys(obj);
+
+  for(const nome of nomes){
+    if(Object.prototype.hasOwnProperty.call(obj,nome)){
+      return obj[nome];
+    }
+
+    const alvo = normalizarTexto(nome);
+
+    const chave = chaves.find(c =>
+      normalizarTexto(c) === alvo
+    );
+
+    if(chave){
+      return obj[chave];
+    }
+  }
+
+  return "";
+}
+
+function texto(v){
+  if(v === null || v === undefined) return "";
+  return String(v).trim();
+}
+
+function numero(v){
+  if(v === null || v === undefined || v === "") return null;
+
+  if(typeof v === "number"){
+    return Number.isFinite(v) ? v : null;
+  }
+
+  let s = String(v).trim();
+
+  if(!s) return null;
+
+  s = s.replace(/\s/g,"");
+
+  if(s.includes("R$")){
+    s = s.replace("R$","");
+  }
+
+  if(s.includes(".") && s.includes(",")){
+    s = s.replace(/\./g,"").replace(",",".");
+  }else{
+    s = s.replace(",",".");
+  }
+
+  const n = Number(s);
+
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizarTexto(v){
+  return String(v || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/\s+/g," ")
+    .trim()
+    .toUpperCase();
+}
+
+function montarPreview(dados){
+  const el = document.getElementById("preview");
+
+  if(!dados.length){
+    el.innerHTML = "";
+    return;
+  }
+
+  const amostra = dados.slice(0,10);
+
+  let html = "<table>";
+  html += "<thead><tr>";
+  html += "<th>Cliente</th>";
+  html += "<th>Produto</th>";
+  html += "<th>Unidade</th>";
+  html += "<th>Forma Pagamento</th>";
+  html += "<th>Status</th>";
+  html += "<th>Classificação</th>";
+  html += "<th>Média 3M</th>";
+  html += "</tr></thead><tbody>";
+
+  amostra.forEach(r => {
+    html += "<tr>";
+    html += "<td>" + escapeHtml(r.cliente) + "</td>";
+    html += "<td>" + escapeHtml(r.produto) + "</td>";
+    html += "<td>" + escapeHtml(r.unidade) + "</td>";
+    html += "<td>" + escapeHtml(r.forma_pagamento) + "</td>";
+    html += "<td>" + escapeHtml(r.status) + "</td>";
+    html += "<td>" + escapeHtml(r.classificacao) + "</td>";
+    html += "<td>" + formatarNumero(r.media_3m) + "</td>";
+    html += "</tr>";
+  });
+
+  html += "</tbody></table>";
+
+  el.innerHTML = html;
+}
+
+function escapeHtml(v){
+  return String(v ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function formatarNumero(v){
+  if(!Number.isFinite(v)) return "";
+  return v.toLocaleString("pt-BR",{
+    maximumFractionDigits:2
+  });
+}
+
+function baixarJson(){
+  if(!jsonGerado){
+    msg("Nenhum JSON foi gerado ainda. Primeiro faça upload do relatório.","error");
+    return;
+  }
+
+  const blob = new Blob([jsonGerado],{
+    type:"application/json;charset=utf-8"
+  });
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "regras_ativas.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function limpar(){
+  regrasConvertidas = [];
+  jsonGerado = "";
+
+  document.getElementById("arquivoRegras").value = "";
+  document.getElementById("totalRegistros").value = "";
+  document.getElementById("jsonSaida").value = "";
+  document.getElementById("preview").innerHTML = "";
+
+  msg("");
+}
+</script>
+
+</body>
+</html>
 
