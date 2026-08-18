@@ -1,1 +1,10 @@
-
+[
+  {
+    "cnpj": "00000000000000",
+    "cliente": "CLIENTE TESTE",
+    "tipo_operacao": "CONSUMIDOR FINAL",
+    "mes1": 10000,
+    "mes2": 12000,
+    "mes3": 11000
+  }
+]
