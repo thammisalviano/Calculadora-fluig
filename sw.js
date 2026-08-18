@@ -5,7 +5,8 @@ const ASSETS=[
  './index.html',
  './manifest.json',
  './sw.js',
- './precos_atuais.json'
+ './precos_atuais.json',
+ './regras_ativas.json'
 ];
 
 self.addEventListener('install',e=>
