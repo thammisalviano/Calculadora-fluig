@@ -74,6 +74,12 @@ header p{
   gap:12px;
 }
 
+.grid-2{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+
 label{
   display:block;
   font-size:13px;
@@ -129,11 +135,6 @@ button{
 .copy{
   background:#dbeafe;
   color:#1e3a8a;
-}
-
-.admin{
-  background:#fef3c7;
-  color:#92400e;
 }
 
 .actions{
@@ -312,8 +313,34 @@ textarea{
   background:#111827;
 }
 
+.helper{
+  font-size:12px;
+  color:#6b7280;
+  margin-top:6px;
+}
+
+.regra-box{
+  background:#f9fafb;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+}
+
+.regra-box strong{
+  display:block;
+  font-size:15px;
+  margin-bottom:5px;
+}
+
+.regra-box span{
+  display:block;
+  font-size:12px;
+  color:#6b7280;
+}
+
 @media(max-width:800px){
   .grid,
+  .grid-2,
   .results,
   .price-mode{
     grid-template-columns:1fr;
@@ -343,14 +370,18 @@ textarea{
 
 <header>
   <h1>Calculadora FLUIG</h1>
-  <p>Aprovador comercial com base de preços, custo total, desconto sugerido, margem mínima ajustada ao volume e justificativa pronta para copiar.</p>
+  <p>
+    Aprovador comercial com base de preços, regras ativas, média de volume dos últimos meses,
+    margem mínima ajustada ao volume e justificativa pronta para copiar.
+  </p>
 </header>
 
 <section class="card">
   <h2>1. Base da operação <span class="pill">usuário comum</span></h2>
 
   <p class="note">
-    A base é carregada automaticamente pelo arquivo precos_atuais.json. Usuários comuns apenas selecionam unidade, produto e tipo de preço.
+    A base de preços é carregada automaticamente pelo arquivo precos_atuais.json.
+    A base de regras é carregada automaticamente pelo arquivo regras_ativas.json.
   </p>
 
   <div class="grid">
@@ -389,7 +420,7 @@ textarea{
     </div>
 
     <div>
-      <label>Classificação</label>
+      <label>Classificação da unidade</label>
       <input id="classificacao" readonly>
     </div>
 
@@ -413,43 +444,125 @@ textarea{
       <input id="dataCusto" readonly>
     </div>
   </div>
-
-  <div class="actions">
-    <button class="admin" onclick="liberarAdmin()">Administrador</button>
-  </div>
 </section>
 
-<section id="adminArea" class="card hide">
-  <h2>Área do administrador <span class="pill">upload restrito</span></h2>
+<section class="card">
+  <h2>2. Regra ativa do cliente</h2>
 
   <p class="note">
-    Use esta área para carregar a planilha Excel de preços, converter para JSON e baixar o arquivo precos_atuais.json atualizado. Depois substitua esse JSON no GitHub para todos os usuários enxergarem a base nova.
+    Digite parte do nome do cliente e selecione a opção correspondente. A calculadora irá buscar a regra ativa
+    e preencher automaticamente o volume atual mensal com base na média dos últimos 3 meses.
   </p>
 
   <div class="grid">
     <div>
-      <label for="arquivoBase">Carregar planilha de preços (.xlsx)</label>
-      <input id="arquivoBase" type="file" accept=".xlsx,.xls" onchange="importarExcel(event)">
+      <label for="buscaCliente">Buscar cliente</label>
+      <input
+        id="buscaCliente"
+        list="listaClientes"
+        placeholder="Ex.: MAKFIL"
+        oninput="aplicarRegraPorBusca()"
+        autocomplete="off"
+      >
+      <datalist id="listaClientes"></datalist>
+      <div class="helper">Digite o nome e selecione o cliente compatível.</div>
     </div>
 
     <div>
-      <label>Total de registros carregados</label>
-      <input id="totalRegistros" readonly>
+      <label>Cliente selecionado</label>
+      <input id="clienteRegra" readonly>
     </div>
 
     <div>
-      <label>Baixar base convertida</label>
-      <button class="primary" onclick="baixarJson()">Baixar precos_atuais.json</button>
+      <label>Grupo Cliente</label>
+      <input id="grupoCliente" readonly>
+    </div>
+
+    <div>
+      <label>Gestor Conta</label>
+      <input id="gestorConta" readonly>
+    </div>
+
+    <div>
+      <label>Status</label>
+      <input id="statusRegra" readonly>
+    </div>
+
+    <div>
+      <label>Classificação Cliente</label>
+      <input id="classificacaoCliente" readonly>
+    </div>
+
+    <div>
+      <label>Produto da regra</label>
+      <input id="produtoRegra" readonly>
+    </div>
+
+    <div>
+      <label>Unidade da regra</label>
+      <input id="unidadeRegra" readonly>
+    </div>
+
+    <div>
+      <label>Forma de pagamento</label>
+      <input id="formaPagamento" readonly>
     </div>
   </div>
 
-  <div class="actions">
-    <button class="secondary" onclick="bloquearAdmin()">Ocultar área administrativa</button>
+  <div class="divider"></div>
+
+  <div class="grid">
+    <div>
+      <label>Preço Regra (R$)</label>
+      <input id="precoRegra" type="number" step="0.0001" readonly>
+    </div>
+
+    <div>
+      <label>Preço Promo (R$)</label>
+      <input id="precoPromoRegra" type="number" step="0.0001" readonly>
+    </div>
+
+    <div>
+      <label>Preço B2B (R$)</label>
+      <input id="precoB2B" type="number" step="0.0001" readonly>
+    </div>
+
+    <div>
+      <label>CMV da regra (R$)</label>
+      <input id="cmvRegra" type="number" step="0.0001" readonly>
+    </div>
+
+    <div>
+      <label>Volume Jun/2026 (L)</label>
+      <input id="volumeJun" readonly>
+    </div>
+
+    <div>
+      <label>Volume Jul/2026 (L)</label>
+      <input id="volumeJul" readonly>
+    </div>
+
+    <div>
+      <label>Volume Ago/2026 (L)</label>
+      <input id="volumeAgo" readonly>
+    </div>
+
+    <div>
+      <label>Média últimos 3 meses (L)</label>
+      <input id="media3m" readonly>
+    </div>
+
+    <div>
+      <label>Fonte do volume atual</label>
+      <input id="fonteVolume" readonly>
+    </div>
   </div>
+
+  <div id="msgRegra" class="alert hide"></div>
 </section>
 
 <section class="card">
-  <h2>2. Custos</h2>
+  <h2>3. Custos</h2>
 
   <div class="grid">
     <div>
@@ -474,7 +587,7 @@ textarea{
 </section>
 
 <section class="card">
-  <h2>3. Simulação comercial</h2>
+  <h2>4. Simulação comercial</h2>
 
   <div class="grid">
     <div>
@@ -494,12 +607,14 @@ textarea{
 
     <div>
       <label for="volumeAtual">Volume atual mensal (L)</label>
-      <input id="volumeAtual" type="number" step="1" value="0" oninput="calcular()">
+      <input id="volumeAtual" type="number" step="1" value="0" readonly>
+      <div class="helper">Preenchido pela média 3M da regra ativa.</div>
     </div>
 
     <div>
       <label for="volumeProjetado">Volume projetado mensal (L)</label>
       <input id="volumeProjetado" type="number" step="1" value="0" oninput="calcular()">
+      <div class="helper">Use somente se houver projeção comercial diferente da média histórica.</div>
     </div>
 
     <div>
@@ -518,7 +633,7 @@ textarea{
 </section>
 
 <section class="card">
-  <h2>4. Resultado da análise</h2>
+  <h2>5. Resultado da análise</h2>
 
   <div id="statusBox" class="status neutro">
     <span>Nível de aprovação</span>
@@ -575,7 +690,7 @@ textarea{
 </section>
 
 <section class="card">
-  <h2>5. Comparativo visual</h2>
+  <h2>6. Comparativo visual</h2>
 
   <div class="bars">
     <div class="bar-row">
@@ -595,7 +710,7 @@ textarea{
 </section>
 
 <section class="card">
-  <h2>6. Justificativa para copiar no FLUIG</h2>
+  <h2>7. Justificativa para copiar no FLUIG</h2>
 
   <textarea id="justificativa" readonly></textarea>
 
@@ -613,24 +728,27 @@ textarea{
   </p>
 
   <p class="note">
-    Faixas usadas: até 1.000 L = R$ 0,30/L; 1.001 a 5.000 L = R$ 0,25/L; 5.001 a 20.000 L = R$ 0,20/L; 20.001 a 50.000 L = R$ 0,15/L; acima de 50.000 L = R$ 0,12/L. Piso absoluto: R$ 0,10/L. Volume não garantido: +R$ 0,03/L.
+    Faixas usadas: até 1.000 L = R$ 0,30/L; 1.001 a 5.000 L = R$ 0,25/L;
+    5.001 a 20.000 L = R$ 0,20/L; 20.001 a 50.000 L = R$ 0,15/L;
+    acima de 50.000 L = R$ 0,12/L. Piso absoluto: R$ 0,10/L.
+    Volume não garantido: +R$ 0,03/L.
   </p>
 </section>
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
 <script>
-const SENHA_ADMIN = "MonteCarlo2026";
 const PISO_ABSOLUTO = 0.10;
 const RISCO_VOLUME_NAO_GARANTIDO = 0.03;
 
 let basePrecos = [];
+let baseRegras = [];
+
 let itemSelecionado = null;
+let regraSelecionada = null;
+
 let tipoPrecoSelecionado = "bomba";
 let travaAtualizacao = false;
-let jsonGerado = "";
 
 const money = v => Number.isFinite(v)
   ? v.toLocaleString("pt-BR", {
@@ -674,7 +792,7 @@ function setValor(id, valorCampo){
   }
 }
 
-function msg(texto,tipo="alert"){
+function msgBase(texto,tipo="alert"){
   const el = document.getElementById("msgBase");
 
   if(!texto){
@@ -687,94 +805,76 @@ function msg(texto,tipo="alert"){
   el.textContent = texto;
 }
 
-function liberarAdmin(){
-  const senha = prompt("Digite a senha de administrador:");
+function msgRegra(texto,tipo="alert"){
+  const el = document.getElementById("msgRegra");
 
-  if(senha !== SENHA_ADMIN){
-    alert("Acesso negado.");
+  if(!texto){
+    el.className = "alert hide";
+    el.textContent = "";
     return;
   }
 
-  document.getElementById("adminArea").classList.remove("hide");
-}
-
-function bloquearAdmin(){
-  document.getElementById("adminArea").classList.add("hide");
+  el.className = tipo === "ok" ? "alert ok" : "alert";
+  el.textContent = texto;
 }
 
 async function iniciar(){
+  await carregarBasePrecos();
+  await carregarBaseRegras();
+
+  preencherUnidades();
+  preencherListaClientes();
+
+  calcular();
+}
+
+async function carregarBasePrecos(){
   try{
     const resp = await fetch("./precos_atuais.json", {cache:"no-store"});
 
     if(!resp.ok){
-      msg("Não encontrei o arquivo precos_atuais.json. Verifique se ele está no mesmo local do index.html.");
+      msgBase("Não encontrei o arquivo precos_atuais.json. Verifique se ele está no mesmo local do index.html.");
       return;
     }
 
     const dados = await resp.json();
 
-    basePrecos = dados.map(normalizarLinha).filter(x => x.unidade && x.produto);
-    jsonGerado = JSON.stringify(basePrecos, null, 2);
+    basePrecos = dados.map(normalizarLinhaPreco).filter(x => x.unidade && x.produto);
 
-    preencherUnidades();
-
-    msg("Base de preços carregada automaticamente.", "ok");
+    msgBase("Base de preços carregada automaticamente.", "ok");
 
   }catch(e){
-    msg("Erro ao carregar precos_atuais.json. Verifique se o JSON está válido.");
+    msgBase("Erro ao carregar precos_atuais.json. Verifique se o JSON está válido.");
   }
 }
 
-async function importarExcel(event){
-  const arquivo = event.target.files[0];
+async function carregarBaseRegras(){
+  try{
+    const resp = await fetch("./regras_ativas.json", {cache:"no-store"});
 
-  if(!arquivo) return;
+    if(!resp.ok){
+      msgRegra("Arquivo regras_ativas.json não encontrado. A calculadora continuará funcionando sem regra ativa.");
+      return;
+    }
 
-  if(typeof XLSX === "undefined"){
-    alert("A biblioteca de leitura Excel não carregou. Verifique a internet e tente novamente.");
-    return;
+    const dados = await resp.json();
+
+    baseRegras = Array.isArray(dados)
+      ? dados.map(normalizarLinhaRegra).filter(x => x.cliente)
+      : [];
+
+    if(baseRegras.length > 0){
+      msgRegra("Base de regras ativas carregada automaticamente.", "ok");
+    }else{
+      msgRegra("regras_ativas.json carregado, mas sem registros.");
+    }
+
+  }catch(e){
+    msgRegra("Erro ao carregar regras_ativas.json. Verifique se o JSON está válido.");
   }
-
-  const dados = await arquivo.arrayBuffer();
-  const wb = XLSX.read(dados, {type:"array"});
-
-  const aba = wb.SheetNames.includes("Preços Atuais")
-    ? "Preços Atuais"
-    : wb.SheetNames[0];
-
-  const linhas = XLSX.utils.sheet_to_json(wb.Sheets[aba], {defval:null});
-
-  basePrecos = linhas
-    .map(normalizarLinha)
-    .filter(x => x.unidade && x.produto);
-
-  jsonGerado = JSON.stringify(basePrecos, null, 2);
-
-  document.getElementById("totalRegistros").value = basePrecos.length;
-
-  preencherUnidades();
-
-  msg("Planilha carregada e convertida. Agora baixe o precos_atuais.json e substitua no GitHub.", "ok");
 }
 
-function baixarJson(){
-  if(!jsonGerado){
-    alert("Nenhuma base carregada para baixar.");
-    return;
-  }
-
-  const blob = new Blob([jsonGerado], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "precos_atuais.json";
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
-
-function normalizarLinha(l){
+function normalizarLinhaPreco(l){
   return {
     rota: l.rota ?? l.Rota ?? "",
     codigo: l.codigo ?? l["Código"] ?? "",
@@ -796,10 +896,65 @@ function normalizarLinha(l){
   };
 }
 
+function normalizarLinhaRegra(l){
+  return {
+    cliente: texto(l.cliente ?? l.Cliente),
+    grupo_cliente: texto(l.grupo_cliente ?? l["Grupo Cliente"]),
+    gestor_conta: texto(l.gestor_conta ?? l["Gestor Conta"]),
+    status: texto(l.status ?? l.Status),
+    classificacao: texto(l.classificacao ?? l["Classificação"]),
+
+    produto: texto(l.produto ?? l.Produto),
+    unidade: texto(l.unidade ?? l.Unidade),
+    forma_pagamento: texto(l.forma_pagamento ?? l["Forma Pagamento"]),
+
+    preco_regra: n(l.preco_regra ?? l["Preço Regra"]),
+    preco_promo: n(l.preco_promo ?? l["Preço Promo"]),
+    preco_b2b: n(l.preco_b2b ?? l["Preço B2B"]),
+    cmv: n(l.cmv ?? l["CMV"] ?? l["Custo CMV"]),
+
+    volume_jun_2026: n(l.volume_jun_2026 ?? l["Volume Jun/2026"]),
+    volume_jul_2026: n(l.volume_jul_2026 ?? l["Volume Jul/2026"]),
+    volume_ago_2026: n(l.volume_ago_2026 ?? l["Volume Ago/2026"]),
+
+    media_3m: n(l.media_3m ?? l["Média ult. 3 meses"] ?? l["Media ult. 3 meses"])
+  };
+}
+
+function texto(v){
+  if(v === null || v === undefined) return "";
+  return String(v).trim();
+}
+
 function n(v){
   if(v === null || v === undefined || v === "") return null;
-  const x = Number(String(v).replace(",", "."));
+
+  if(typeof v === "number"){
+    return Number.isFinite(v) ? v : null;
+  }
+
+  let s = String(v).trim();
+
+  if(!s) return null;
+
+  s = s.replace(/\s/g, "");
+
+  if(s.includes(".") && s.includes(",")){
+    s = s.replace(/\./g, "").replace(",", ".");
+  }else{
+    s = s.replace(",", ".");
+  }
+
+  const x = Number(s);
   return Number.isFinite(x) ? x : null;
+}
+
+function normalizarBusca(v){
+  return String(v || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .trim();
 }
 
 function preencherUnidades(){
@@ -839,6 +994,7 @@ function preencherProdutos(){
 
   itemSelecionado = null;
   limparDadosBase();
+  preencherListaClientes();
 }
 
 function aplicarProdutoSelecionado(){
@@ -850,7 +1006,11 @@ function aplicarProdutoSelecionado(){
     x.produto === produto
   );
 
-  if(!itemSelecionado) return;
+  if(!itemSelecionado){
+    limparDadosBase();
+    preencherListaClientes();
+    return;
+  }
 
   setValor("bandeira", itemSelecionado.bandeira || "");
   setValor("classificacao", itemSelecionado.classificacao || "");
@@ -870,6 +1030,154 @@ function aplicarProdutoSelecionado(){
   }
 
   atualizarPrecoBase();
+  preencherListaClientes();
+}
+
+function preencherListaClientes(){
+  const lista = document.getElementById("listaClientes");
+  const unidadeSelecionada = normalizarBusca(document.getElementById("unidade").value);
+  const produtoSelecionado = normalizarBusca(document.getElementById("produto").value);
+
+  lista.innerHTML = "";
+
+  let regrasFiltradas = baseRegras;
+
+  if(unidadeSelecionada){
+    regrasFiltradas = regrasFiltradas.filter(r =>
+      !r.unidade || normalizarBusca(r.unidade) === unidadeSelecionada
+    );
+  }
+
+  if(produtoSelecionado){
+    regrasFiltradas = regrasFiltradas.filter(r =>
+      !r.produto || normalizarBusca(r.produto) === produtoSelecionado
+    );
+  }
+
+  if(regrasFiltradas.length === 0){
+    regrasFiltradas = baseRegras;
+  }
+
+  const opcoes = regrasFiltradas
+    .map(r => montarChaveRegra(r))
+    .filter(Boolean);
+
+  const unicas = [...new Set(opcoes)].sort((a,b) =>
+    String(a).localeCompare(String(b), "pt-BR")
+  );
+
+  unicas.forEach(o => {
+    const opt = document.createElement("option");
+    opt.value = o;
+    lista.appendChild(opt);
+  });
+}
+
+function montarChaveRegra(r){
+  const partes = [
+    r.cliente,
+    r.produto,
+    r.unidade,
+    r.forma_pagamento
+  ].filter(Boolean);
+
+  return partes.join(" | ");
+}
+
+function aplicarRegraPorBusca(){
+  const busca = document.getElementById("buscaCliente").value;
+  const buscaNorm = normalizarBusca(busca);
+
+  if(!buscaNorm){
+    limparRegraCliente();
+    return;
+  }
+
+  let regra = baseRegras.find(r =>
+    normalizarBusca(montarChaveRegra(r)) === buscaNorm
+  );
+
+  if(!regra){
+    regra = baseRegras.find(r =>
+      normalizarBusca(r.cliente) === buscaNorm
+    );
+  }
+
+  if(!regra){
+    regra = baseRegras.find(r =>
+      normalizarBusca(r.cliente).includes(buscaNorm)
+    );
+  }
+
+  if(!regra){
+    msgRegra("Digite mais letras ou selecione uma opção da lista.");
+    return;
+  }
+
+  aplicarRegraSelecionada(regra);
+}
+
+function aplicarRegraSelecionada(regra){
+  regraSelecionada = regra;
+
+  setValor("clienteRegra", regra.cliente);
+  setValor("grupoCliente", regra.grupo_cliente);
+  setValor("gestorConta", regra.gestor_conta);
+  setValor("statusRegra", regra.status);
+  setValor("classificacaoCliente", regra.classificacao);
+
+  setValor("produtoRegra", regra.produto);
+  setValor("unidadeRegra", regra.unidade);
+  setValor("formaPagamento", regra.forma_pagamento);
+
+  setValor("precoRegra", regra.preco_regra);
+  setValor("precoPromoRegra", regra.preco_promo);
+  setValor("precoB2B", regra.preco_b2b);
+  setValor("cmvRegra", regra.cmv);
+
+  setValor("volumeJun", regra.volume_jun_2026 ?? "");
+  setValor("volumeJul", regra.volume_jul_2026 ?? "");
+  setValor("volumeAgo", regra.volume_ago_2026 ?? "");
+  setValor("media3m", regra.media_3m ?? "");
+
+  if(Number.isFinite(regra.media_3m)){
+    setValor("volumeAtual", regra.media_3m);
+    setValor("fonteVolume", "Média últimos 3 meses");
+    msgRegra("Regra ativa localizada. Volume atual preenchido automaticamente pela média 3M.", "ok");
+  }else{
+    setValor("fonteVolume", "");
+    msgRegra("Regra localizada, mas sem média 3M válida.");
+  }
+
+  calcular();
+}
+
+function limparRegraCliente(){
+  regraSelecionada = null;
+
+  [
+    "clienteRegra",
+    "grupoCliente",
+    "gestorConta",
+    "statusRegra",
+    "classificacaoCliente",
+    "produtoRegra",
+    "unidadeRegra",
+    "formaPagamento",
+    "precoRegra",
+    "precoPromoRegra",
+    "precoB2B",
+    "cmvRegra",
+    "volumeJun",
+    "volumeJul",
+    "volumeAgo",
+    "media3m",
+    "fonteVolume"
+  ].forEach(id => setValor(id, ""));
+
+  setValor("volumeAtual", 0);
+  msgRegra("");
+  calcular();
 }
 
 function selecionarTipoPreco(tipo){
@@ -1035,7 +1343,11 @@ function calcular(){
     contribuicao,
     precoMinimo,
     descontoMaximo,
-    volumeConsiderado
+    volumeConsiderado,
+    cliente: regraSelecionada?.cliente || "",
+    grupoCliente: regraSelecionada?.grupo_cliente || "",
+    classificacaoCliente: regraSelecionada?.classificacao || "",
+    gestorConta: regraSelecionada?.gestor_conta || ""
   });
 }
 
@@ -1063,9 +1375,17 @@ function atualizarBarras(margemLiquida, margemMinima){
 }
 
 function gerarJustificativa(r){
+  const dadosCliente = r.cliente
+    ? " Cliente: " + r.cliente +
+      (r.grupoCliente ? ", grupo " + r.grupoCliente : "") +
+      (r.classificacaoCliente ? ", classificação " + r.classificacaoCliente : "") +
+      "."
+    : "";
+
   if(r.nivel === "Aprovável"){
     return (
-      "Simulação aprovada. " +
+      "Simulação aprovada." +
+      dadosCliente + " " +
       "Preço base de " + money(r.precoBase) + "/L, preço sugerido de " + money(r.preco) + "/L e desconto de " + money(r.desconto) + "/L. " +
       "A margem líquida de " + money(r.margemLiquida) + "/L supera a margem mínima requerida de " + money(r.margemMinima) + "/L, com folga de segurança de " + money(r.folga) + "/L. " +
       "Contribuição mensal estimada de " + money(r.contribuicao) + " para volume considerado de " + litros(r.volumeConsiderado) + ". " +
@@ -1075,7 +1395,8 @@ function gerarJustificativa(r){
 
   if(r.nivel === "Aprovar com atenção"){
     return (
-      "Simulação dentro do limite mínimo, porém com baixa folga de segurança. " +
+      "Simulação dentro do limite mínimo, porém com baixa folga de segurança." +
+      dadosCliente + " " +
       "Preço base de " + money(r.precoBase) + "/L, preço sugerido de " + money(r.preco) + "/L e desconto de " + money(r.desconto) + "/L. " +
       "Margem líquida de " + money(r.margemLiquida) + "/L, margem mínima requerida de " + money(r.margemMinima) + "/L e folga de " + money(r.folga) + "/L. " +
       "Recomenda-se validar volume, recorrência e risco antes da aprovação."
@@ -1083,7 +1404,8 @@ function gerarJustificativa(r){
   }
 
   return (
-    "Simulação requer análise. " +
+    "Simulação requer análise." +
+    dadosCliente + " " +
     "Preço base de " + money(r.precoBase) + "/L, preço sugerido de " + money(r.preco) + "/L e desconto de " + money(r.desconto) + "/L. " +
     "A margem líquida de " + money(r.margemLiquida) + "/L está abaixo da margem mínima requerida de " + money(r.margemMinima) + "/L, gerando folga negativa de " + money(r.folga) + "/L. " +
     "Recomenda-se revisar preço, desconto, custo, volume ou condição comercial."
@@ -1099,6 +1421,9 @@ function copiarJustificativa(){
 function copiarResumo(){
   const texto =
     "Status: " + document.getElementById("rNivel").textContent + "\n" +
+    "Cliente: " + document.getElementById("clienteRegra").value + "\n" +
+    "Grupo: " + document.getElementById("grupoCliente").value + "\n" +
+    "Classificação: " + document.getElementById("classificacaoCliente").value + "\n" +
     "Margem líquida: " + document.getElementById("rMargemLiquida").textContent + "\n" +
     "Margem mínima: " + document.getElementById("rMargemMinima").textContent + "\n" +
     "Folga: " + document.getElementById("rFolga").textContent + "\n" +
@@ -1123,8 +1448,13 @@ function limparSimulacao(){
   setValor("precoSugerido", "");
   setValor("descontoSugerido", "");
   setValor("taxa", 0);
-  setValor("volumeAtual", 0);
   setValor("volumeProjetado", 0);
+
+  if(regraSelecionada && Number.isFinite(regraSelecionada.media_3m)){
+    setValor("volumeAtual", regraSelecionada.media_3m);
+  }else{
+    setValor("volumeAtual", 0);
+  }
 
   document.getElementById("volumeGarantido").value = "nao";
 
@@ -1136,10 +1466,11 @@ function limparSimulacao(){
   document.getElementById("statusBox").className = "status neutro";
   document.getElementById("barLiquida").style.width = "0%";
   document.getElementById("barMinima").style.width = "0%";
+
+  calcular();
 }
 
 iniciar();
-calcular();
 
 if("serviceWorker" in navigator){
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js"));
