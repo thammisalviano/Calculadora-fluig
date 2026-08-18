@@ -1,10 +1,25 @@
 [
   {
-    "cnpj": "00000000000000",
-    "cliente": "CLIENTE TESTE",
-    "tipo_operacao": "CONSUMIDOR FINAL",
-    "mes1": 10000,
-    "mes2": 12000,
-    "mes3": 11000
+    "cliente": "MAKFIL",
+    "grupo_cliente": "GRANDES CLIENTES",
+    "gestor_conta": "ROGERIO",
+
+    "status": "ATIVO",
+    "classificacao": "CURVA A",
+
+    "produto": "DIESEL S10",
+    "unidade": "SAO JOSE",
+    "forma_pagamento": "TRUCKPAG",
+
+    "preco_regra": 5.89,
+    "preco_promo": 5.85,
+    "preco_b2b": 5.87,
+    "cmv": 5.21,
+
+    "volume_jun_2026": 18000,
+    "volume_jul_2026": 19000,
+    "volume_ago_2026": 19889,
+
+    "media_3m": 18963
   }
 ]
