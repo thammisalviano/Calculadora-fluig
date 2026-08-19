@@ -70,12 +70,6 @@ header p{
   box-shadow:0 4px 18px #0000000d;
 }
 
-.grid{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:12px;
-}
-
 .grid2{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -91,7 +85,6 @@ label{
 }
 
 input,
-select,
 textarea{
   width:100%;
   padding:13px;
@@ -103,8 +96,12 @@ textarea{
   color:#111827;
 }
 
-input[readonly],
-textarea[readonly]{
+textarea{
+  min-height:260px;
+  resize:vertical;
+  font-family:Consolas,monospace;
+  font-size:13px;
+  line-height:1.45;
   background:#f9fafb;
   color:#4b5563;
 }
@@ -155,6 +152,7 @@ button{
   font-size:13px;
   font-weight:700;
   margin-top:10px;
+  white-space:pre-line;
 }
 
 .ok{
@@ -177,14 +175,6 @@ button{
 
 .hide{
   display:none!important;
-}
-
-textarea{
-  min-height:260px;
-  resize:vertical;
-  font-family:Consolas,monospace;
-  font-size:13px;
-  line-height:1.45;
 }
 
 table{
@@ -240,8 +230,18 @@ th{
   font-size:20px;
 }
 
+.linkbox{
+  font-size:12px;
+  color:#374151;
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:10px;
+  margin-top:10px;
+  word-break:break-all;
+}
+
 @media(max-width:900px){
-  .grid,
   .grid2,
   .resumo{
     grid-template-columns:1fr;
@@ -259,15 +259,15 @@ th{
 
 <header>
   <h1>Admin - Calculadora FLUIG</h1>
-  <p>Área para converter os dois arquivos principais da calculadora: relatório de regras ativas e preços atuais.</p>
+  <p>Área para converter e atualizar online os dois arquivos principais da calculadora: regras ativas e preços atuais.</p>
 </header>
 
 <section class="card">
   <h2>1. Arquivos da calculadora</h2>
 
   <p class="note">
-    Suba os arquivos em Excel. A tela vai converter cada um para JSON separado.
-    Depois baixe os arquivos gerados e coloque no projeto da calculadora.
+    Suba os arquivos em Excel. A tela converte cada base para JSON e depois envia para o Supabase.
+    O caminho usado será <b>calculadora-fluig/dados</b>.
   </p>
 
   <div class="grid2">
@@ -289,9 +289,11 @@ th{
   <div class="actions">
     <button class="primary" onclick="baixarJson('regras')">Baixar regras_ativas.json</button>
     <button class="primary" onclick="baixarJson('precos')">Baixar precos_atuais.json</button>
-    <button class="success" onclick="baixarTodos()">Baixar os dois JSONs</button>
+    <button class="success" onclick="salvarDadosOnline()">Salvar dados online</button>
     <button class="secondary" onclick="limpar()">Limpar tudo</button>
   </div>
+
+  <div id="linksOnline" class="linkbox hide"></div>
 </section>
 
 <section class="card">
@@ -374,8 +376,15 @@ th{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2script>
 
 <script>
+const SUPABASE_URL = "https://zudphalpfnssnqmhqonx.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_Q2Jto95dwggese7ASzwM7w_qwLvJAEf";
+const SUPABASE_BUCKET = "calculadora-fluig";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
 let regrasConvertidas = [];
 let precosConvertidos = [];
 
@@ -408,6 +417,8 @@ async function importarArquivo(event,tipo){
   const arquivo = event.target.files[0];
 
   if(!arquivo) return;
+
+  msg("Lendo arquivo, aguarde...","info");
 
   if(typeof XLSX === "undefined"){
     msg("A biblioteca de leitura do Excel não carregou. Verifique a internet e tente novamente.","error");
@@ -479,7 +490,7 @@ async function importarArquivo(event,tipo){
     if(tipo === "regras"){
       regrasConvertidas = objetos
         .map(normalizarRegra)
-        .filter(r => r.cliente || r.cod_cliente || r.produto);
+        .filter(r => r.cliente || r.cod_cliente || r.produto || r.produto_short);
 
       jsonRegrasGerado = JSON.stringify(regrasConvertidas,null,2);
 
@@ -498,14 +509,14 @@ async function importarArquivo(event,tipo){
       if(regrasConvertidas.length === 0){
         msg("O cabeçalho das regras foi encontrado, mas nenhum registro útil foi convertido.","error");
       }else{
-        msg("Relatório de regras ativas convertido com sucesso.","ok");
+        msg("Relatório de regras ativas convertido com sucesso. Agora você pode salvar online.","ok");
       }
     }
 
     if(tipo === "precos"){
       precosConvertidos = objetos
         .map(normalizarPrecoAtual)
-        .filter(p => p.produto || p.produto_short || p.unidade || p.preco_atual !== null);
+        .filter(p => p.produto || p.produto_short || p.unidade || p.preco_atual !== null || p.cmv_frete !== null);
 
       jsonPrecosGerado = JSON.stringify(precosConvertidos,null,2);
 
@@ -524,7 +535,7 @@ async function importarArquivo(event,tipo){
       if(precosConvertidos.length === 0){
         msg("O cabeçalho dos preços foi encontrado, mas nenhum registro útil foi convertido.","error");
       }else{
-        msg("Arquivo de preços atuais convertido com sucesso.","ok");
+        msg("Arquivo de preços atuais convertido com sucesso. Agora você pode salvar online.","ok");
       }
     }
 
@@ -658,116 +669,33 @@ function linhaParaObjeto(cabecalhos,linha){
 }
 
 function normalizarRegra(l){
-  const codigoRegra = texto(pegar(l,[
-    "Código",
-    "Codigo",
-    "Regra",
-    "codigo_regra"
-  ]));
+  const codigoRegra = texto(pegar(l,["Código","Codigo","Regra","codigo_regra"]));
+  const regra = texto(pegar(l,["Regra"]));
+  const tipo = texto(pegar(l,["Tipo"]));
+  const valor = numero(pegar(l,["Valor"]));
 
-  const regra = texto(pegar(l,[
-    "Regra"
-  ]));
+  const produto = texto(pegar(l,["Produto","Descrição Produto","Descricao Produto"]));
+  const produtoShort = texto(pegar(l,["Produto (Short)","Produto Short","produto_short"]));
 
-  const tipo = texto(pegar(l,[
-    "Tipo"
-  ]));
+  const codUnidade = texto(pegar(l,["Cód. Unidade","Cod. Unidade","Código Unidade","Codigo Unidade","cod_unidade"]));
+  const unidade = texto(pegar(l,["Unidade"]));
+  const rotas = texto(pegar(l,["Rotas","Rota"]));
+  const bandeira = texto(pegar(l,["Bandeira"]));
 
-  const valor = numero(pegar(l,[
-    "Valor"
-  ]));
+  const codCliente = texto(pegar(l,["Cód. Cliente","Cod. Cliente","Código Cliente","Codigo Cliente","cod_cliente"]));
+  const cliente = texto(pegar(l,["Cliente"]));
+  const grupoCliente = texto(pegar(l,["Grupo Cliente","Grupo"]));
+  const gestorConta = texto(pegar(l,["Gestor Conta","Gestor","Vendedor","Responsável","Responsavel"]));
 
-  const produto = texto(pegar(l,[
-    "Produto",
-    "Descrição Produto",
-    "Descricao Produto"
-  ]));
+  const valorDescontado = numero(pegar(l,["Valor Descontado"]));
+  const formaPagamento = texto(pegar(l,["Forma Pagamento","Forma de Pagamento","Pagamento"]));
 
-  const produtoShort = texto(pegar(l,[
-    "Produto (Short)",
-    "Produto Short",
-    "produto_short"
-  ]));
+  const status = texto(pegar(l,["Status"]));
+  const classificacao = texto(pegar(l,["Classificação","Classificacao"]));
 
-  const codUnidade = texto(pegar(l,[
-    "Cód. Unidade",
-    "Cod. Unidade",
-    "Código Unidade",
-    "Codigo Unidade",
-    "cod_unidade"
-  ]));
-
-  const unidade = texto(pegar(l,[
-    "Unidade"
-  ]));
-
-  const rotas = texto(pegar(l,[
-    "Rotas",
-    "Rota"
-  ]));
-
-  const bandeira = texto(pegar(l,[
-    "Bandeira"
-  ]));
-
-  const codCliente = texto(pegar(l,[
-    "Cód. Cliente",
-    "Cod. Cliente",
-    "Código Cliente",
-    "Codigo Cliente",
-    "cod_cliente"
-  ]));
-
-  const cliente = texto(pegar(l,[
-    "Cliente"
-  ]));
-
-  const grupoCliente = texto(pegar(l,[
-    "Grupo Cliente",
-    "Grupo"
-  ]));
-
-  const gestorConta = texto(pegar(l,[
-    "Gestor Conta",
-    "Gestor",
-    "Vendedor",
-    "Responsável",
-    "Responsavel"
-  ]));
-
-  const valorDescontado = numero(pegar(l,[
-    "Valor Descontado"
-  ]));
-
-  const formaPagamento = texto(pegar(l,[
-    "Forma Pagamento",
-    "Forma de Pagamento",
-    "Pagamento"
-  ]));
-
-  const status = texto(pegar(l,[
-    "Status"
-  ]));
-
-  const classificacao = texto(pegar(l,[
-    "Classificação",
-    "Classificacao"
-  ]));
-
-  const precoRegra = numero(pegar(l,[
-    "Preço Regra",
-    "Preco Regra"
-  ]));
-
-  const precoPromo = numero(pegar(l,[
-    "Preço Promo",
-    "Preco Promo"
-  ]));
-
-  const precoB2B = numero(pegar(l,[
-    "Preço B2B",
-    "Preco B2B"
-  ]));
+  const precoRegra = numero(pegar(l,["Preço Regra","Preco Regra"]));
+  const precoPromo = numero(pegar(l,["Preço Promo","Preco Promo"]));
+  const precoB2B = numero(pegar(l,["Preço B2B","Preco B2B"]));
 
   const volumeCliente = numero(pegar(l,[
     "Volume Cliente Jan/27",
@@ -777,11 +705,7 @@ function normalizarRegra(l){
     "Volume"
   ]));
 
-  const cmvFrete = numero(pegar(l,[
-    "CMV + Frete",
-    "CMV+Frete",
-    "CMV Frete"
-  ]));
+  const cmvFrete = numero(pegar(l,["CMV + Frete","CMV+Frete","CMV Frete"]));
 
   const custoNfastFrete = numero(pegar(l,[
     "CUSTO NFAST + Frete",
@@ -797,11 +721,7 @@ function normalizarRegra(l){
     "Custo Referencia + Frete"
   ]));
 
-  const taxaCtf = numero(pegar(l,[
-    "Taxa CTF",
-    " Taxa CTF ",
-    "taxa_ctf"
-  ]));
+  const taxaCtf = numero(pegar(l,["Taxa CTF"," Taxa CTF ","taxa_ctf"]));
 
   const precoLiquidoTaxa = numero(pegar(l,[
     "Preço Líquido Taxa",
@@ -809,26 +729,10 @@ function normalizarRegra(l){
     "preco_liquido_taxa"
   ]));
 
-  const unitariaCmv = numero(pegar(l,[
-    "Unitária CMV",
-    "Unitaria CMV"
-  ]));
-
-  const unitariaNfast = numero(pegar(l,[
-    "Unitária Nfast",
-    "Unitária NFast",
-    "Unitaria Nfast",
-    "Unitaria NFast"
-  ]));
-
-  const margemPrincipal = numero(pegar(l,[
-    "Margem Principal",
-    "margem_principal"
-  ]));
-
-  const segmento = texto(pegar(l,[
-    "Segmento"
-  ]));
+  const unitariaCmv = numero(pegar(l,["Unitária CMV","Unitaria CMV"]));
+  const unitariaNfast = numero(pegar(l,["Unitária Nfast","Unitária NFast","Unitaria Nfast","Unitaria NFast"]));
+  const margemPrincipal = numero(pegar(l,["Margem Principal","margem_principal"]));
+  const segmento = texto(pegar(l,["Segmento"]));
 
   const volumeRegra = numero(pegar(l,[
     "Volume Regra 05_06.26",
@@ -949,31 +853,11 @@ function normalizarPrecoAtual(l){
     "Terminal"
   ]));
 
-  const cidade = texto(pegar(l,[
-    "Cidade",
-    "Município",
-    "Municipio"
-  ]));
-
-  const uf = texto(pegar(l,[
-    "UF",
-    "Estado"
-  ]));
-
-  const bandeira = texto(pegar(l,[
-    "Bandeira"
-  ]));
-
-  const rota = texto(pegar(l,[
-    "Rota",
-    "Rotas"
-  ]));
-
-  const modal = texto(pegar(l,[
-    "Modal",
-    "Tipo Frete",
-    "Frete"
-  ]));
+  const cidade = texto(pegar(l,["Cidade","Município","Municipio"]));
+  const uf = texto(pegar(l,["UF","Estado"]));
+  const bandeira = texto(pegar(l,["Bandeira"]));
+  const rota = texto(pegar(l,["Rota","Rotas"]));
+  const modal = texto(pegar(l,["Modal","Tipo Frete","Frete"]));
 
   const precoAtual = numero(pegar(l,[
     "Preço Atual",
@@ -1017,10 +901,7 @@ function normalizarPrecoAtual(l){
     "Frete"
   ]));
 
-  const taxaCtf = numero(pegar(l,[
-    "Taxa CTF",
-    "CTF"
-  ]));
+  const taxaCtf = numero(pegar(l,["Taxa CTF","CTF"]));
 
   const precoLiquidoTaxa = numero(pegar(l,[
     "Preço Líquido Taxa",
@@ -1037,9 +918,7 @@ function normalizarPrecoAtual(l){
     "Margem Unitaria"
   ]));
 
-  const icms = numero(pegar(l,[
-    "ICMS"
-  ]));
+  const icms = numero(pegar(l,["ICMS"]));
 
   const pisCofins = numero(pegar(l,[
     "PIS/COFINS",
@@ -1302,27 +1181,6 @@ function baixarJson(tipo){
   }
 }
 
-function baixarTodos(){
-  let baixou = false;
-
-  if(jsonRegrasGerado){
-    baixarArquivo("regras_ativas.json",jsonRegrasGerado);
-    baixou = true;
-  }
-
-  if(jsonPrecosGerado){
-    baixarArquivo("precos_atuais.json",jsonPrecosGerado);
-    baixou = true;
-  }
-
-  if(!baixou){
-    msg("Nenhum JSON foi gerado ainda. Suba os arquivos antes de baixar.","error");
-    return;
-  }
-
-  msg("Download dos arquivos disponíveis iniciado.","ok");
-}
-
 function baixarArquivo(nome,conteudo){
   const blob = new Blob([conteudo],{
     type:"application/json;charset=utf-8"
@@ -1338,6 +1196,100 @@ function baixarArquivo(nome,conteudo){
   document.body.removeChild(a);
 
   URL.revokeObjectURL(url);
+}
+
+async function salvarDadosOnline(){
+  if(!jsonRegrasGerado && !jsonPrecosGerado){
+    msg("Nenhum JSON foi gerado ainda. Primeiro suba pelo menos um dos arquivos.","error");
+    return;
+  }
+
+  msg("Salvando dados online no Supabase...","info");
+
+  const resultados = [];
+
+  try{
+    if(jsonRegrasGerado){
+      await enviarJsonSupabase("dados/regras_ativas.json",jsonRegrasGerado);
+      resultados.push("regras_ativas.json salvo em dados/regras_ativas.json");
+    }
+
+    if(jsonPrecosGerado){
+      await enviarJsonSupabase("dados/precos_atuais.json",jsonPrecosGerado);
+      resultados.push("precos_atuais.json salvo em dados/precos_atuais.json");
+    }
+
+    mostrarLinksOnline();
+
+    msg(
+      "Dados salvos online com sucesso.\n\n" +
+      resultados.join("\n") +
+      "\n\nAgora a calculadora poderá ler os arquivos atualizados no Supabase.",
+      "ok"
+    );
+
+  }catch(e){
+    console.error(e);
+
+    let detalhe = "";
+
+    if(e && e.message){
+      detalhe = "\n\nDetalhe: " + e.message;
+    }
+
+    msg(
+      "Erro ao salvar dados online no Supabase. Verifique se as Policies de INSERT, UPDATE e SELECT estão ativas para o bucket calculadora-fluig." +
+      detalhe,
+      "error"
+    );
+  }
+}
+
+async function enviarJsonSupabase(caminho,conteudo){
+  const blob = new Blob([conteudo],{
+    type:"application/json;charset=utf-8"
+  });
+
+  const resposta = await supabaseClient
+    .storage
+    .from(SUPABASE_BUCKET)
+    .upload(caminho,blob,{
+      contentType:"application/json;charset=utf-8",
+      cacheControl:"0",
+      upsert:true
+    });
+
+  if(resposta.error){
+    throw resposta.error;
+  }
+
+  return resposta.data;
+}
+
+function mostrarLinksOnline(){
+  const el = document.getElementById("linksOnline");
+
+  const regras = supabaseClient
+    .storage
+    .from(SUPABASE_BUCKET)
+    .getPublicUrl("dados/regras_ativas.json");
+
+  const precos = supabaseClient
+    .storage
+    .from(SUPABASE_BUCKET)
+    .getPublicUrl("dados/precos_atuais.json");
+
+  let html = "";
+  html += "<b>Links públicos gerados:</b><br><br>";
+
+  html += "<b>Regras:</b><br>";
+  html += escapeHtml(regras.data.publicUrl) + "<br><br>";
+
+  html += "<b>Preços:</b><br>";
+  html += escapeHtml(precos.data.publicUrl);
+
+  el.innerHTML = html;
+  el.className = "linkbox";
 }
 
 function limpar(){
@@ -1361,6 +1313,9 @@ function limpar(){
 
   document.getElementById("diagnosticoRegras").innerHTML = "";
   document.getElementById("diagnosticoPrecos").innerHTML = "";
+
+  document.getElementById("linksOnline").innerHTML = "";
+  document.getElementById("linksOnline").className = "linkbox hide";
 
   msg("");
 }
