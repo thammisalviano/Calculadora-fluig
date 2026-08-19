@@ -17,6 +17,7 @@
   --green:#047857;
   --red:#b91c1c;
   --yellow:#b45309;
+  --blue:#1d4ed8;
 }
 
 body{
@@ -27,7 +28,7 @@ body{
 }
 
 .app{
-  max-width:1100px;
+  max-width:1180px;
   margin:auto;
   padding:20px;
 }
@@ -43,6 +44,16 @@ header{
 h1{
   margin:0 0 6px;
   font-size:26px;
+}
+
+h2{
+  margin:0 0 10px;
+  font-size:20px;
+}
+
+h3{
+  margin:16px 0 8px;
+  font-size:16px;
 }
 
 header p{
@@ -62,6 +73,12 @@ header p{
 .grid{
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+
+.grid2{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
   gap:12px;
 }
 
@@ -111,6 +128,11 @@ button{
   color:#111827;
 }
 
+.success{
+  background:#047857;
+  color:#fff;
+}
+
 .actions{
   display:flex;
   gap:10px;
@@ -145,6 +167,12 @@ button{
   background:#fef2f2;
   border-color:#fecaca;
   color:#b91c1c;
+}
+
+.info{
+  background:#eff6ff;
+  border-color:#bfdbfe;
+  color:#1d4ed8;
 }
 
 .hide{
@@ -187,10 +215,38 @@ th{
   font-weight:800;
 }
 
-@media(max-width:800px){
-  .grid{
+.resumo{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+}
+
+.kpi{
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  padding:12px;
+}
+
+.kpi span{
+  display:block;
+  font-size:12px;
+  color:#6b7280;
+  font-weight:800;
+  margin-bottom:4px;
+}
+
+.kpi strong{
+  font-size:20px;
+}
+
+@media(max-width:900px){
+  .grid,
+  .grid2,
+  .resumo{
     grid-template-columns:1fr;
   }
+
   .app{
     padding:12px;
   }
@@ -203,62 +259,116 @@ th{
 
 <header>
   <h1>Admin - Calculadora FLUIG</h1>
-  <p>Área para converter o relatório de regras ativas em regras_ativas.json.</p>
+  <p>Área para converter os dois arquivos principais da calculadora: relatório de regras ativas e preços atuais.</p>
 </header>
 
 <section class="card">
-  <h2>1. Upload do relatório de regras ativas</h2>
+  <h2>1. Arquivos da calculadora</h2>
 
   <p class="note">
-    Selecione o arquivo Relatório_Regras_Ativas em formato .xlsm, .xlsx, .xls ou .xlsb.
-    A ferramenta vai procurar automaticamente a linha de cabeçalho e gerar o arquivo regras_ativas.json.
+    Suba os arquivos em Excel. A tela vai converter cada um para JSON separado.
+    Depois baixe os arquivos gerados e coloque no projeto da calculadora.
   </p>
 
-  <div class="grid">
+  <div class="grid2">
     <div>
-      <label for="arquivoRegras">Arquivo de regras</label>
-      <input id="arquivoRegras" type="file" accept=".xlsm,.xlsx,.xls,.xlsb" onchange="importarRegras(event)">
+      <label for="arquivoRegras">Relatório de regras ativas</label>
+      <input id="arquivoRegras" type="file" accept=".xlsm,.xlsx,.xls,.xlsb,.csv" onchange="importarArquivo(event,'regras')">
+      <p class="note">Gera o arquivo <b>regras_ativas.json</b>.</p>
     </div>
 
     <div>
-      <label>Total de registros encontrados</label>
-      <input id="totalRegistros" readonly>
-    </div>
-
-    <div>
-      <label>Arquivo gerado</label>
-      <input id="nomeArquivo" value="regras_ativas.json" readonly>
+      <label for="arquivoPrecos">Preços atuais</label>
+      <input id="arquivoPrecos" type="file" accept=".xlsm,.xlsx,.xls,.xlsb,.csv" onchange="importarArquivo(event,'precos')">
+      <p class="note">Gera o arquivo <b>precos_atuais.json</b>.</p>
     </div>
   </div>
 
   <div id="msg" class="alert hide"></div>
 
   <div class="actions">
-    <button class="primary" onclick="baixarJson()">Baixar regras_ativas.json</button>
-    <button class="secondary" onclick="limpar()">Limpar</button>
+    <button class="primary" onclick="baixarJson('regras')">Baixar regras_ativas.json</button>
+    <button class="primary" onclick="baixarJson('precos')">Baixar precos_atuais.json</button>
+    <button class="success" onclick="baixarTodos()">Baixar os dois JSONs</button>
+    <button class="secondary" onclick="limpar()">Limpar tudo</button>
   </div>
 </section>
 
 <section class="card">
-  <h2>2. Diagnóstico da leitura</h2>
-  <p class="note">
-    Esta área mostra qual aba foi lida, onde o cabeçalho foi encontrado e quais colunas foram detectadas.
-  </p>
-  <div id="diagnostico"></div>
+  <h2>2. Resumo da conversão</h2>
+
+  <div class="resumo">
+    <div class="kpi">
+      <span>Regras convertidas</span>
+      <strong id="totalRegras">0</strong>
+    </div>
+
+    <div class="kpi">
+      <span>Preços convertidos</span>
+      <strong id="totalPrecos">0</strong>
+    </div>
+
+    <div class="kpi">
+      <span>Arquivo regras</span>
+      <strong style="font-size:14px">regras_ativas.json</strong>
+    </div>
+
+    <div class="kpi">
+      <span>Arquivo preços</span>
+      <strong style="font-size:14px">precos_atuais.json</strong>
+    </div>
+  </div>
 </section>
 
 <section class="card">
-  <h2>3. Prévia dos dados convertidos</h2>
+  <h2>3. Diagnóstico da leitura</h2>
   <p class="note">
-    Abaixo aparecem os primeiros registros convertidos. Use esta prévia para validar se Cliente, Produto, Unidade, Volume, Taxa e Margem vieram corretamente.
+    Aqui aparece qual aba foi lida, onde o cabeçalho foi encontrado e quais colunas foram detectadas.
   </p>
 
-  <div id="preview"></div>
+  <div class="grid2">
+    <div>
+      <h3>Relatório de regras ativas</h3>
+      <div id="diagnosticoRegras"></div>
+    </div>
+
+    <div>
+      <h3>Preços atuais</h3>
+      <div id="diagnosticoPrecos"></div>
+    </div>
+  </div>
 </section>
 
 <section class="card">
-  <h2>4. JSON gerado</h2>
-  <textarea id="jsonSaida" readonly></textarea>
+  <h2>4. Prévia dos dados convertidos</h2>
+
+  <div class="grid2">
+    <div>
+      <h3>Prévia das regras</h3>
+      <div id="previewRegras"></div>
+    </div>
+
+    <div>
+      <h3>Prévia dos preços atuais</h3>
+      <div id="previewPrecos"></div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>5. JSON gerado</h2>
+
+  <div class="grid2">
+    <div>
+      <label>regras_ativas.json</label>
+      <textarea id="jsonRegras" readonly></textarea>
+    </div>
+
+    <div>
+      <label>precos_atuais.json</label>
+      <textarea id="jsonPrecos" readonly></textarea>
+    </div>
+  </div>
 </section>
 
 </div>
@@ -267,7 +377,10 @@ th{
 
 <script>
 let regrasConvertidas = [];
-let jsonGerado = "";
+let precosConvertidos = [];
+
+let jsonRegrasGerado = "";
+let jsonPrecosGerado = "";
 
 function msg(texto,tipo="alert"){
   const el = document.getElementById("msg");
@@ -282,6 +395,8 @@ function msg(texto,tipo="alert"){
     el.className = "alert ok";
   }else if(tipo === "error"){
     el.className = "alert error";
+  }else if(tipo === "info"){
+    el.className = "alert info";
   }else{
     el.className = "alert";
   }
@@ -289,7 +404,7 @@ function msg(texto,tipo="alert"){
   el.textContent = texto;
 }
 
-async function importarRegras(event){
+async function importarArquivo(event,tipo){
   const arquivo = event.target.files[0];
 
   if(!arquivo) return;
@@ -310,10 +425,7 @@ async function importarRegras(event){
       dense:true
     });
 
-    console.log("ABAS ENCONTRADAS:");
-    console.log(wb.SheetNames);
-
-    const aba = escolherAba(wb);
+    const aba = escolherAba(wb,tipo);
 
     if(!aba){
       msg("Não foi possível encontrar uma aba válida no arquivo.","error");
@@ -322,12 +434,6 @@ async function importarRegras(event){
 
     const sheet = wb.Sheets[aba];
 
-    console.log("ABA USADA:", aba);
-    console.log("SHEET:");
-    console.log(sheet);
-    console.log("RANGE:");
-    console.log(sheet ? sheet["!ref"] : undefined);
-
     const bruto = XLSX.utils.sheet_to_json(sheet,{
       header:1,
       defval:"",
@@ -335,65 +441,91 @@ async function importarRegras(event){
       raw:false
     });
 
-    console.log("TOTAL LINHAS BRUTAS:", bruto.length);
-    console.log("PRIMEIRAS 20 LINHAS:");
-    console.log(bruto.slice(0,20));
-
     if(!bruto.length){
-      limparResultado();
-      montarDiagnostico({
+      montarDiagnostico(tipo,{
         aba,
         totalBruto:0,
         linhaCabecalho:null,
         colunas:[]
       });
 
-      msg("A aba foi encontrada, mas não trouxe linhas legíveis. Tente salvar o relatório como .xlsx comum ou exportar a aba como CSV.","error");
+      msg("A aba foi encontrada, mas não trouxe linhas legíveis. Tente salvar como .xlsx comum.","error");
       return;
     }
 
-    const indiceCabecalho = encontrarLinhaCabecalho(bruto);
+    const indiceCabecalho = encontrarLinhaCabecalho(bruto,tipo);
 
     if(indiceCabecalho === -1){
-      limparResultado();
-      montarDiagnostico({
+      montarDiagnostico(tipo,{
         aba,
         totalBruto:bruto.length,
         linhaCabecalho:null,
         colunas:[]
       });
 
-      msg("Não encontrei uma linha de cabeçalho com Cliente, Produto ou Unidade. Verifique se a aba correta foi usada.","error");
+      if(tipo === "regras"){
+        msg("Não encontrei o cabeçalho do relatório de regras. Precisa ter Cliente, Produto ou Unidade.","error");
+      }else{
+        msg("Não encontrei o cabeçalho de preços atuais. Precisa ter Produto e alguma coluna de preço, custo ou valor.","error");
+      }
+
       return;
     }
 
     const cabecalhos = bruto[indiceCabecalho].map(c => texto(c));
     const linhasDados = bruto.slice(indiceCabecalho + 1);
+    const objetos = linhasDados.map(linha => linhaParaObjeto(cabecalhos,linha));
 
-    const objetos = linhasDados.map(linha => linhaParaObjeto(cabecalhos, linha));
+    if(tipo === "regras"){
+      regrasConvertidas = objetos
+        .map(normalizarRegra)
+        .filter(r => r.cliente || r.cod_cliente || r.produto);
 
-    regrasConvertidas = objetos
-      .map(normalizarRegra)
-      .filter(r => r.cliente);
+      jsonRegrasGerado = JSON.stringify(regrasConvertidas,null,2);
 
-    jsonGerado = JSON.stringify(regrasConvertidas,null,2);
+      document.getElementById("totalRegras").textContent = regrasConvertidas.length;
+      document.getElementById("jsonRegras").value = jsonRegrasGerado;
 
-    document.getElementById("totalRegistros").value = regrasConvertidas.length;
-    document.getElementById("jsonSaida").value = jsonGerado;
+      montarDiagnostico(tipo,{
+        aba,
+        totalBruto:bruto.length,
+        linhaCabecalho:indiceCabecalho + 1,
+        colunas:cabecalhos.filter(Boolean)
+      });
 
-    montarDiagnostico({
-      aba,
-      totalBruto:bruto.length,
-      linhaCabecalho:indiceCabecalho + 1,
-      colunas:cabecalhos.filter(Boolean)
-    });
+      montarPreviewRegras(regrasConvertidas);
 
-    montarPreview(regrasConvertidas);
+      if(regrasConvertidas.length === 0){
+        msg("O cabeçalho das regras foi encontrado, mas nenhum registro útil foi convertido.","error");
+      }else{
+        msg("Relatório de regras ativas convertido com sucesso.","ok");
+      }
+    }
 
-    if(regrasConvertidas.length === 0){
-      msg("O cabeçalho foi encontrado, mas nenhum registro com Cliente foi convertido. Veja o diagnóstico e a prévia.","error");
-    }else{
-      msg("Arquivo convertido com sucesso. Confira a prévia e baixe o regras_ativas.json.","ok");
+    if(tipo === "precos"){
+      precosConvertidos = objetos
+        .map(normalizarPrecoAtual)
+        .filter(p => p.produto || p.produto_short || p.unidade || p.preco_atual !== null);
+
+      jsonPrecosGerado = JSON.stringify(precosConvertidos,null,2);
+
+      document.getElementById("totalPrecos").textContent = precosConvertidos.length;
+      document.getElementById("jsonPrecos").value = jsonPrecosGerado;
+
+      montarDiagnostico(tipo,{
+        aba,
+        totalBruto:bruto.length,
+        linhaCabecalho:indiceCabecalho + 1,
+        colunas:cabecalhos.filter(Boolean)
+      });
+
+      montarPreviewPrecos(precosConvertidos);
+
+      if(precosConvertidos.length === 0){
+        msg("O cabeçalho dos preços foi encontrado, mas nenhum registro útil foi convertido.","error");
+      }else{
+        msg("Arquivo de preços atuais convertido com sucesso.","ok");
+      }
     }
 
   }catch(e){
@@ -402,17 +534,38 @@ async function importarRegras(event){
   }
 }
 
-function escolherAba(wb){
-  const nomesPreferidos = [
-    "Regra de preços",
-    "Regras de preço",
-    "Regras Ativas",
-    "Relatório_Regras_Ativas",
-    "Relatório",
-    "Relatorio",
-    "Base Clientes",
-    "Clientes"
-  ];
+function escolherAba(wb,tipo){
+  let nomesPreferidos = [];
+
+  if(tipo === "regras"){
+    nomesPreferidos = [
+      "Regra de preços",
+      "Regras de preço",
+      "Regras Ativas",
+      "Relatório_Regras_Ativas",
+      "Relatorio_Regras_Ativas",
+      "Relatório",
+      "Relatorio",
+      "Base Clientes",
+      "Clientes"
+    ];
+  }
+
+  if(tipo === "precos"){
+    nomesPreferidos = [
+      "Preços Atuais",
+      "Precos Atuais",
+      "Preço Atual",
+      "Preco Atual",
+      "Preços",
+      "Precos",
+      "Tabela de Preços",
+      "Tabela de Precos",
+      "Base Preços",
+      "Base Precos",
+      "Atual"
+    ];
+  }
 
   for(const nome of nomesPreferidos){
     const encontrada = wb.SheetNames.find(a =>
@@ -427,26 +580,76 @@ function escolherAba(wb){
   return wb.SheetNames[0] || null;
 }
 
-function encontrarLinhaCabecalho(matriz){
+function encontrarLinhaCabecalho(matriz,tipo){
   for(let i = 0; i < matriz.length; i++){
     const linha = matriz[i].map(c => normalizarTexto(c));
 
-    const temCliente = linha.some(c => c === "CLIENTE");
-    const temProduto = linha.some(c => c === "PRODUTO" || c === "PRODUTO SHORT" || c === "PRODUTO (SHORT)");
-    const temUnidade = linha.some(c => c === "UNIDADE" || c === "COD UNIDADE" || c === "COD. UNIDADE" || c === "CODIGO UNIDADE");
+    if(tipo === "regras"){
+      const temCliente = linha.some(c =>
+        c === "CLIENTE" ||
+        c === "COD CLIENTE" ||
+        c === "CODIGO CLIENTE"
+      );
 
-    if(temCliente && (temProduto || temUnidade)){
-      return i;
+      const temProduto = linha.some(c =>
+        c === "PRODUTO" ||
+        c === "PRODUTO SHORT" ||
+        c === "PRODUTO (SHORT)"
+      );
+
+      const temUnidade = linha.some(c =>
+        c === "UNIDADE" ||
+        c === "COD UNIDADE" ||
+        c === "CODIGO UNIDADE"
+      );
+
+      if(temCliente && (temProduto || temUnidade)){
+        return i;
+      }
+    }
+
+    if(tipo === "precos"){
+      const temProduto = linha.some(c =>
+        c === "PRODUTO" ||
+        c === "PRODUTO SHORT" ||
+        c === "DESCRICAO PRODUTO" ||
+        c === "COMBUSTIVEL"
+      );
+
+      const temUnidade = linha.some(c =>
+        c === "UNIDADE" ||
+        c === "BASE" ||
+        c === "FILIAL" ||
+        c === "POLO" ||
+        c === "TERMINAL" ||
+        c === "CIDADE"
+      );
+
+      const temPreco = linha.some(c =>
+        c === "PRECO" ||
+        c === "PRECO ATUAL" ||
+        c === "PRECO VENDA" ||
+        c === "VALOR" ||
+        c === "VALOR ATUAL" ||
+        c === "CUSTO" ||
+        c === "CMV" ||
+        c === "CMV FRETE" ||
+        c === "CMV + FRETE"
+      );
+
+      if(temProduto && (temUnidade || temPreco)){
+        return i;
+      }
     }
   }
 
   return -1;
 }
 
-function linhaParaObjeto(cabecalhos, linha){
+function linhaParaObjeto(cabecalhos,linha){
   const obj = {};
 
-  cabecalhos.forEach((cabecalho, idx) => {
+  cabecalhos.forEach((cabecalho,idx) => {
     const chave = cabecalho || ("COLUNA_" + idx);
     obj[chave] = linha[idx] ?? "";
   });
@@ -475,7 +678,9 @@ function normalizarRegra(l){
   ]));
 
   const produto = texto(pegar(l,[
-    "Produto"
+    "Produto",
+    "Descrição Produto",
+    "Descricao Produto"
   ]));
 
   const produtoShort = texto(pegar(l,[
@@ -564,10 +769,12 @@ function normalizarRegra(l){
     "Preco B2B"
   ]));
 
-  const volumeClienteJan27 = numero(pegar(l,[
+  const volumeCliente = numero(pegar(l,[
     "Volume Cliente Jan/27",
     "Volume Jan/27",
-    "Jan/27"
+    "Jan/27",
+    "Volume Cliente",
+    "Volume"
   ]));
 
   const cmvFrete = numero(pegar(l,[
@@ -666,7 +873,7 @@ function normalizarRegra(l){
     preco_promo: precoPromo,
     preco_b2b: precoB2B,
 
-    volume_cliente: volumeClienteJan27,
+    volume_cliente: volumeCliente,
     volume_regra: volumeRegra,
 
     cmv_frete: cmvFrete,
@@ -684,7 +891,197 @@ function normalizarRegra(l){
   };
 }
 
-function pegar(obj, nomes){
+function normalizarPrecoAtual(l){
+  const data = texto(pegar(l,[
+    "Data",
+    "Data Preço",
+    "Data Preco",
+    "Dt Preço",
+    "Dt Preco",
+    "Atualização",
+    "Atualizacao"
+  ]));
+
+  const fornecedor = texto(pegar(l,[
+    "Fornecedor",
+    "Distribuidora",
+    "Companhia",
+    "Cia",
+    "Empresa"
+  ]));
+
+  const produto = texto(pegar(l,[
+    "Produto",
+    "Descrição Produto",
+    "Descricao Produto",
+    "Combustível",
+    "Combustivel"
+  ]));
+
+  const produtoShort = texto(pegar(l,[
+    "Produto Short",
+    "Produto (Short)",
+    "produto_short",
+    "Produto Resumido"
+  ]));
+
+  const codProduto = texto(pegar(l,[
+    "Cód. Produto",
+    "Cod. Produto",
+    "Código Produto",
+    "Codigo Produto",
+    "cod_produto"
+  ]));
+
+  const codUnidade = texto(pegar(l,[
+    "Cód. Unidade",
+    "Cod. Unidade",
+    "Código Unidade",
+    "Codigo Unidade",
+    "cod_unidade"
+  ]));
+
+  const unidade = texto(pegar(l,[
+    "Unidade",
+    "Base",
+    "Filial",
+    "Polo",
+    "Terminal"
+  ]));
+
+  const cidade = texto(pegar(l,[
+    "Cidade",
+    "Município",
+    "Municipio"
+  ]));
+
+  const uf = texto(pegar(l,[
+    "UF",
+    "Estado"
+  ]));
+
+  const bandeira = texto(pegar(l,[
+    "Bandeira"
+  ]));
+
+  const rota = texto(pegar(l,[
+    "Rota",
+    "Rotas"
+  ]));
+
+  const modal = texto(pegar(l,[
+    "Modal",
+    "Tipo Frete",
+    "Frete"
+  ]));
+
+  const precoAtual = numero(pegar(l,[
+    "Preço Atual",
+    "Preco Atual",
+    "Preço",
+    "Preco",
+    "Preço Venda",
+    "Preco Venda",
+    "Valor Atual",
+    "Valor",
+    "PV",
+    "Preço Final",
+    "Preco Final"
+  ]));
+
+  const precoBase = numero(pegar(l,[
+    "Preço Base",
+    "Preco Base",
+    "Base Preço",
+    "Base Preco"
+  ]));
+
+  const cmv = numero(pegar(l,[
+    "CMV",
+    "Custo",
+    "Custo Produto"
+  ]));
+
+  const cmvFrete = numero(pegar(l,[
+    "CMV + Frete",
+    "CMV+Frete",
+    "CMV Frete",
+    "Custo + Frete",
+    "Custo Frete"
+  ]));
+
+  const freteValor = numero(pegar(l,[
+    "Valor Frete",
+    "Frete Valor",
+    "Frete R$",
+    "Frete"
+  ]));
+
+  const taxaCtf = numero(pegar(l,[
+    "Taxa CTF",
+    "CTF"
+  ]));
+
+  const precoLiquidoTaxa = numero(pegar(l,[
+    "Preço Líquido Taxa",
+    "Preco Liquido Taxa",
+    "Preço Liquido",
+    "Preco Liquido"
+  ]));
+
+  const margem = numero(pegar(l,[
+    "Margem",
+    "Margem Principal",
+    "Margem R$",
+    "Margem Unitária",
+    "Margem Unitaria"
+  ]));
+
+  const icms = numero(pegar(l,[
+    "ICMS"
+  ]));
+
+  const pisCofins = numero(pegar(l,[
+    "PIS/COFINS",
+    "Pis Cofins",
+    "PIS COFINS"
+  ]));
+
+  return {
+    data: data,
+
+    fornecedor: fornecedor,
+    bandeira: bandeira,
+
+    cod_produto: codProduto,
+    produto: produto,
+    produto_short: produtoShort,
+
+    cod_unidade: codUnidade,
+    unidade: unidade,
+    cidade: cidade,
+    uf: uf,
+
+    rota: rota,
+    modal: modal,
+
+    preco_atual: precoAtual,
+    preco_base: precoBase,
+
+    cmv: cmv,
+    cmv_frete: cmvFrete,
+    frete_valor: freteValor,
+
+    taxa_ctf: taxaCtf,
+    preco_liquido_taxa: precoLiquidoTaxa,
+
+    margem: margem,
+    icms: icms,
+    pis_cofins: pisCofins
+  };
+}
+
+function pegar(obj,nomes){
   const chaves = Object.keys(obj);
 
   for(const nome of nomes){
@@ -724,8 +1121,15 @@ function numero(v){
 
   s = s.replace(/\s/g,"");
   s = s.replace("R$","");
+  s = s.replace("%","");
 
-  if(s === "#VALOR!" || s === "#N/D" || s === "#DIV/0!"){
+  if(
+    s === "#VALOR!" ||
+    s === "#N/D" ||
+    s === "#DIV/0!" ||
+    s === "#REF!" ||
+    s === "-"
+  ){
     return null;
   }
 
@@ -746,14 +1150,18 @@ function normalizarTexto(v){
     .replace(/[\u0300-\u036f]/g,"")
     .replace(/\s+/g," ")
     .replace(/\./g,"")
+    .replace(/\:/g,"")
     .trim()
     .toUpperCase();
 }
 
-function montarDiagnostico(info){
-  const el = document.getElementById("diagnostico");
+function montarDiagnostico(tipo,info){
+  const el = tipo === "regras"
+    ? document.getElementById("diagnosticoRegras")
+    : document.getElementById("diagnosticoPrecos");
 
   let html = "";
+
   html += "<p><span class='badge'>Aba usada</span> " + escapeHtml(info.aba || "") + "</p>";
   html += "<p><span class='badge'>Total linhas brutas</span> " + escapeHtml(info.totalBruto ?? "") + "</p>";
   html += "<p><span class='badge'>Linha do cabeçalho</span> " + escapeHtml(info.linhaCabecalho || "Não encontrada") + "</p>";
@@ -766,8 +1174,8 @@ function montarDiagnostico(info){
   el.innerHTML = html;
 }
 
-function montarPreview(dados){
-  const el = document.getElementById("preview");
+function montarPreviewRegras(dados){
+  const el = document.getElementById("previewRegras");
 
   if(!dados.length){
     el.innerHTML = "";
@@ -787,13 +1195,13 @@ function montarPreview(dados){
   html += "<th>Preço Promo</th>";
   html += "<th>CMV + Frete</th>";
   html += "<th>Taxa CTF</th>";
-  html += "<th>Margem Principal</th>";
+  html += "<th>Margem</th>";
   html += "</tr></thead><tbody>";
 
   amostra.forEach(r => {
     html += "<tr>";
     html += "<td>" + escapeHtml(r.cliente) + "</td>";
-    html += "<td>" + escapeHtml(r.produto) + "</td>";
+    html += "<td>" + escapeHtml(r.produto || r.produto_short) + "</td>";
     html += "<td>" + escapeHtml(r.unidade) + "</td>";
     html += "<td>" + escapeHtml(r.forma_pagamento) + "</td>";
     html += "<td>" + formatarNumero(r.volume_cliente) + "</td>";
@@ -802,6 +1210,50 @@ function montarPreview(dados){
     html += "<td>" + formatarNumero(r.cmv_frete) + "</td>";
     html += "<td>" + formatarNumero(r.taxa_ctf) + "</td>";
     html += "<td>" + formatarNumero(r.margem_principal) + "</td>";
+    html += "</tr>";
+  });
+
+  html += "</tbody></table>";
+
+  el.innerHTML = html;
+}
+
+function montarPreviewPrecos(dados){
+  const el = document.getElementById("previewPrecos");
+
+  if(!dados.length){
+    el.innerHTML = "";
+    return;
+  }
+
+  const amostra = dados.slice(0,10);
+
+  let html = "<table>";
+  html += "<thead><tr>";
+  html += "<th>Data</th>";
+  html += "<th>Fornecedor</th>";
+  html += "<th>Produto</th>";
+  html += "<th>Unidade</th>";
+  html += "<th>Cidade</th>";
+  html += "<th>UF</th>";
+  html += "<th>Preço Atual</th>";
+  html += "<th>CMV</th>";
+  html += "<th>CMV + Frete</th>";
+  html += "<th>Margem</th>";
+  html += "</tr></thead><tbody>";
+
+  amostra.forEach(p => {
+    html += "<tr>";
+    html += "<td>" + escapeHtml(p.data) + "</td>";
+    html += "<td>" + escapeHtml(p.fornecedor) + "</td>";
+    html += "<td>" + escapeHtml(p.produto || p.produto_short) + "</td>";
+    html += "<td>" + escapeHtml(p.unidade) + "</td>";
+    html += "<td>" + escapeHtml(p.cidade) + "</td>";
+    html += "<td>" + escapeHtml(p.uf) + "</td>";
+    html += "<td>" + formatarNumero(p.preco_atual) + "</td>";
+    html += "<td>" + formatarNumero(p.cmv) + "</td>";
+    html += "<td>" + formatarNumero(p.cmv_frete) + "</td>";
+    html += "<td>" + formatarNumero(p.margem) + "</td>";
     html += "</tr>";
   });
 
@@ -826,13 +1278,53 @@ function formatarNumero(v){
   });
 }
 
-function baixarJson(){
-  if(!jsonGerado){
-    msg("Nenhum JSON foi gerado ainda. Primeiro faça upload do relatório.","error");
+function baixarJson(tipo){
+  if(tipo === "regras"){
+    if(!jsonRegrasGerado){
+      msg("Nenhum JSON de regras foi gerado ainda. Primeiro faça upload do relatório de regras ativas.","error");
+      return;
+    }
+
+    baixarArquivo("regras_ativas.json",jsonRegrasGerado);
+    msg("Download do regras_ativas.json iniciado.","ok");
     return;
   }
 
-  const blob = new Blob([jsonGerado],{
+  if(tipo === "precos"){
+    if(!jsonPrecosGerado){
+      msg("Nenhum JSON de preços foi gerado ainda. Primeiro faça upload do arquivo de preços atuais.","error");
+      return;
+    }
+
+    baixarArquivo("precos_atuais.json",jsonPrecosGerado);
+    msg("Download do precos_atuais.json iniciado.","ok");
+    return;
+  }
+}
+
+function baixarTodos(){
+  let baixou = false;
+
+  if(jsonRegrasGerado){
+    baixarArquivo("regras_ativas.json",jsonRegrasGerado);
+    baixou = true;
+  }
+
+  if(jsonPrecosGerado){
+    baixarArquivo("precos_atuais.json",jsonPrecosGerado);
+    baixou = true;
+  }
+
+  if(!baixou){
+    msg("Nenhum JSON foi gerado ainda. Suba os arquivos antes de baixar.","error");
+    return;
+  }
+
+  msg("Download dos arquivos disponíveis iniciado.","ok");
+}
+
+function baixarArquivo(nome,conteudo){
+  const blob = new Blob([conteudo],{
     type:"application/json;charset=utf-8"
   });
 
@@ -840,30 +1332,35 @@ function baixarJson(){
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = "regras_ativas.json";
+  a.download = nome;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
 
   URL.revokeObjectURL(url);
 }
 
-function limparResultado(){
-  regrasConvertidas = [];
-  jsonGerado = "";
-
-  document.getElementById("totalRegistros").value = "";
-  document.getElementById("jsonSaida").value = "";
-  document.getElementById("preview").innerHTML = "";
-}
-
 function limpar(){
   regrasConvertidas = [];
-  jsonGerado = "";
+  precosConvertidos = [];
+
+  jsonRegrasGerado = "";
+  jsonPrecosGerado = "";
 
   document.getElementById("arquivoRegras").value = "";
-  document.getElementById("totalRegistros").value = "";
-  document.getElementById("jsonSaida").value = "";
-  document.getElementById("preview").innerHTML = "";
-  document.getElementById("diagnostico").innerHTML = "";
+  document.getElementById("arquivoPrecos").value = "";
+
+  document.getElementById("totalRegras").textContent = "0";
+  document.getElementById("totalPrecos").textContent = "0";
+
+  document.getElementById("jsonRegras").value = "";
+  document.getElementById("jsonPrecos").value = "";
+
+  document.getElementById("previewRegras").innerHTML = "";
+  document.getElementById("previewPrecos").innerHTML = "";
+
+  document.getElementById("diagnosticoRegras").innerHTML = "";
+  document.getElementById("diagnosticoPrecos").innerHTML = "";
 
   msg("");
 }
