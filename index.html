@@ -432,8 +432,8 @@ textarea{
   <h2>2. Regra ativa do cliente</h2>
 
   <p class="note">
-    Digite parte do nome do cliente e selecione a opção correspondente. A calculadora irá buscar a regra ativa
-    e preencher automaticamente o volume atual mensal com base na média dos últimos 3 meses.
+    Digite pelo menos 3 letras do cliente e selecione a opção correspondente.
+    A calculadora irá buscar a regra ativa e preencher automaticamente o volume atual mensal com base na média dos últimos 3 meses.
   </p>
 
   <div class="grid">
@@ -443,11 +443,11 @@ textarea{
         id="buscaCliente"
         list="listaClientes"
         placeholder="Ex.: MAKFIL"
-        oninput="aplicarRegraPorBusca()"
+        oninput="buscarClientesDinamico()"
         autocomplete="off"
       >
       <datalist id="listaClientes"></datalist>
-      <div class="helper">Digite o nome e selecione o cliente compatível.</div>
+      <div class="helper">Digite pelo menos 3 letras. A lista mostra até 50 opções compatíveis.</div>
     </div>
 
     <div>
@@ -726,7 +726,7 @@ const RISCO_VOLUME_NAO_GARANTIDO = 0.03;
 const SUPABASE_BASE_URL =
   "https://zudphalpfnssnqmhqonx.supabase.co/storage/v1/object/public/calculadora-fluig/dados";
 
-const URL_PREC0S_SUPABASE = SUPABASE_BASE_URL + "/precos_atuais.json";
+const URL_PRECOS_SUPABASE = SUPABASE_BASE_URL + "/precos_atuais.json";
 const URL_REGRAS_SUPABASE = SUPABASE_BASE_URL + "/regras_ativas.json";
 
 let basePrecos = [];
@@ -807,18 +807,44 @@ function msgRegra(texto,tipo="alert"){
 }
 
 async function iniciar(){
-  await carregarBasePrecos();
-  await carregarBaseRegras();
+  await removerCacheAntigo();
+
+  msgBase("Carregando base de preços do Supabase...");
+  msgRegra("Carregando regras ativas do Supabase...");
+
+  await Promise.all([
+    carregarBasePrecos(),
+    carregarBaseRegras()
+  ]);
 
   preencherUnidades();
-  preencherListaClientes();
-
+  limparListaClientes();
   calcular();
+}
+
+async function removerCacheAntigo(){
+  try{
+    if("serviceWorker" in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for(const reg of regs){
+        await reg.unregister();
+      }
+    }
+
+    if(window.caches){
+      const nomes = await caches.keys();
+      for(const nome of nomes){
+        await caches.delete(nome);
+      }
+    }
+  }catch(e){
+    console.log("Cache antigo não removido:", e);
+  }
 }
 
 async function carregarBasePrecos(){
   try{
-    const url = URL_PREC0S_SUPABASE + "?v=" + Date.now();
+    const url = URL_PRECOS_SUPABASE + "?v=" + Date.now();
 
     const respPrecos = await fetch(url, {
       cache:"no-store"
@@ -869,7 +895,7 @@ async function carregarBaseRegras(){
       : [];
 
     if(baseRegras.length > 0){
-      msgRegra("Base de regras ativas carregada automaticamente do Supabase. Registros: " + baseRegras.length + ".", "ok");
+      msgRegra("Base de regras carregada. Digite pelo menos 3 letras do cliente para pesquisar. Registros: " + baseRegras.length + ".", "ok");
     }else{
       msgRegra("regras_ativas.json carregado, mas sem registros de cliente.");
     }
@@ -1116,7 +1142,7 @@ function preencherProdutos(){
 
   itemSelecionado = null;
   limparDadosBase();
-  preencherListaClientes();
+  limparListaClientes();
 }
 
 function aplicarProdutoSelecionado(){
@@ -1130,7 +1156,7 @@ function aplicarProdutoSelecionado(){
 
   if(!itemSelecionado){
     limparDadosBase();
-    preencherListaClientes();
+    limparListaClientes();
     return;
   }
 
@@ -1152,47 +1178,92 @@ function aplicarProdutoSelecionado(){
   }
 
   atualizarPrecoBase();
-  preencherListaClientes();
+  limparListaClientes();
 }
 
-function preencherListaClientes(){
+function limparListaClientes(){
   const lista = document.getElementById("listaClientes");
-  const unidadeSelecionada = normalizarBusca(document.getElementById("unidade").value);
-  const produtoSelecionado = normalizarBusca(document.getElementById("produto").value);
+  if(lista){
+    lista.innerHTML = "";
+  }
+}
+
+function buscarClientesDinamico(){
+  const campo = document.getElementById("buscaCliente");
+  const buscaOriginal = campo.value;
+  const buscaNorm = normalizarBusca(buscaOriginal);
+  const lista = document.getElementById("listaClientes");
 
   lista.innerHTML = "";
 
-  let regrasFiltradas = baseRegras;
+  if(!buscaNorm){
+    limparRegraCliente();
+    return;
+  }
+
+  if(buscaNorm.length < 3){
+    msgRegra("Digite pelo menos 3 letras do cliente para pesquisar.");
+    return;
+  }
+
+  const unidadeSelecionada = normalizarBusca(document.getElementById("unidade").value);
+  const produtoSelecionado = normalizarBusca(document.getElementById("produto").value);
+
+  let encontrados = baseRegras.filter(r =>
+    normalizarBusca(r.cliente).includes(buscaNorm)
+  );
 
   if(unidadeSelecionada){
-    regrasFiltradas = regrasFiltradas.filter(r =>
+    encontrados = encontrados.filter(r =>
       !r.unidade || normalizarBusca(r.unidade) === unidadeSelecionada
     );
   }
 
   if(produtoSelecionado){
-    regrasFiltradas = regrasFiltradas.filter(r =>
+    encontrados = encontrados.filter(r =>
       !r.produto || normalizarBusca(r.produto) === produtoSelecionado
     );
   }
 
-  if(regrasFiltradas.length === 0){
-    regrasFiltradas = baseRegras;
+  if(encontrados.length === 0){
+    encontrados = baseRegras.filter(r =>
+      normalizarBusca(r.cliente).includes(buscaNorm)
+    );
   }
 
-  const opcoes = regrasFiltradas
+  const opcoes = encontrados
     .map(r => montarChaveRegra(r))
     .filter(Boolean);
 
-  const unicas = [...new Set(opcoes)].sort((a,b) =>
-    String(a).localeCompare(String(b), "pt-BR")
-  );
+  const unicas = [...new Set(opcoes)]
+    .sort((a,b) => String(a).localeCompare(String(b), "pt-BR"))
+    .slice(0,50);
 
   unicas.forEach(o => {
     const opt = document.createElement("option");
     opt.value = o;
     lista.appendChild(opt);
   });
+
+  const regraPorChave = encontrados.find(r =>
+    normalizarBusca(montarChaveRegra(r)) === buscaNorm
+  );
+
+  if(regraPorChave){
+    aplicarRegraSelecionada(regraPorChave);
+    return;
+  }
+
+  const regrasClienteExato = encontrados.filter(r =>
+    normalizarBusca(r.cliente) === buscaNorm
+  );
+
+  if(regrasClienteExato.length === 1){
+    aplicarRegraSelecionada(regrasClienteExato[0]);
+    return;
+  }
+
+  msgRegra("Selecione uma opção da lista para aplicar a regra.");
 }
 
 function montarChaveRegra(r){
@@ -1204,39 +1275,6 @@ function montarChaveRegra(r){
   ].filter(Boolean);
 
   return partes.join(" | ");
-}
-
-function aplicarRegraPorBusca(){
-  const busca = document.getElementById("buscaCliente").value;
-  const buscaNorm = normalizarBusca(busca);
-
-  if(!buscaNorm){
-    limparRegraCliente();
-    return;
-  }
-
-  let regra = baseRegras.find(r =>
-    normalizarBusca(montarChaveRegra(r)) === buscaNorm
-  );
-
-  if(!regra){
-    regra = baseRegras.find(r =>
-      normalizarBusca(r.cliente) === buscaNorm
-    );
-  }
-
-  if(!regra){
-    regra = baseRegras.find(r =>
-      normalizarBusca(r.cliente).includes(buscaNorm)
-    );
-  }
-
-  if(!regra){
-    msgRegra("Digite mais letras ou selecione uma opção da lista.");
-    return;
-  }
-
-  aplicarRegraSelecionada(regra);
 }
 
 function aplicarRegraSelecionada(regra){
@@ -1593,10 +1631,6 @@ function limparSimulacao(){
 }
 
 iniciar();
-
-if("serviceWorker" in navigator){
-  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js"));
-}
 </script>
 
 </body>
