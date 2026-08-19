@@ -391,11 +391,26 @@ let precosConvertidos = [];
 let jsonRegrasGerado = "";
 let jsonPrecosGerado = "";
 
-window.addEventListener("load",function(){
-  if(typeof supabase !== "undefined"){
-    supabaseClient = supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-  }else{
-    msg("A biblioteca do Supabase não carregou. Verifique a internet e atualize a página.","error");
+window.addEventListener("load", function(){
+  try{
+    if(!window.supabase || !window.supabase.createClient){
+      throw new Error("Biblioteca Supabase não carregada");
+    }
+
+    supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
+
+    msg("Supabase conectado com sucesso.","ok");
+
+  }catch(erro){
+    console.error(erro);
+    msg(
+      "Falha ao conectar ao Supabase.\n\n" +
+      (erro.message || erro),
+      "error"
+    );
   }
 });
 
@@ -715,45 +730,9 @@ function normalizarRegra(l){
 
   const cmvFrete = numero(pegar(l,["CMV + Frete","CMV+Frete","CMV Frete"]));
 
-  const custoNfastFrete = numero(pegar(l,[
-    "CUSTO NFAST + Frete",
-    "Custo NFast + Frete",
-    "Custo NFAST Frete",
-    "CUSTO NFAST Frete"
-  ]));
-
-  const custoReferenciaFrete = numero(pegar(l,[
-    "CUSTO REFERÊNCIA + Frete",
-    "CUSTO REFERENCIA + Frete",
-    "Custo Referência + Frete",
-    "Custo Referencia + Frete"
-  ]));
-
   const taxaCtf = numero(pegar(l,["Taxa CTF"," Taxa CTF ","taxa_ctf"]));
-
-  const precoLiquidoTaxa = numero(pegar(l,[
-    "Preço Líquido Taxa",
-    "Preco Liquido Taxa",
-    "preco_liquido_taxa"
-  ]));
-
-  const unitariaCmv = numero(pegar(l,["Unitária CMV","Unitaria CMV"]));
-  const unitariaNfast = numero(pegar(l,["Unitária Nfast","Unitária NFast","Unitaria Nfast","Unitaria NFast"]));
   const margemPrincipal = numero(pegar(l,["Margem Principal","margem_principal"]));
   const segmento = texto(pegar(l,["Segmento"]));
-
-  const volumeRegra = numero(pegar(l,[
-    "Volume Regra 05_06.26",
-    "Volume Regra 05/06.26",
-    "Volume Regra",
-    "volume_regra"
-  ]));
-
-  const impactoPrincipal = numero(pegar(l,[
-    "Impacto Principal R$",
-    "Impacto Principal",
-    "impacto_principal"
-  ]));
 
   return {
     codigo_regra: codigoRegra,
@@ -786,20 +765,10 @@ function normalizarRegra(l){
     preco_b2b: precoB2B,
 
     volume_cliente: volumeCliente,
-    volume_regra: volumeRegra,
 
     cmv_frete: cmvFrete,
-    custo_nfast_frete: custoNfastFrete,
-    custo_referencia_frete: custoReferenciaFrete,
-
     taxa_ctf: taxaCtf,
-    preco_liquido_taxa: precoLiquidoTaxa,
-
-    unitaria_cmv: unitariaCmv,
-    unitaria_nfast: unitariaNfast,
-
-    margem_principal: margemPrincipal,
-    impacto_principal: impactoPrincipal
+    margem_principal: margemPrincipal
   };
 }
 
@@ -901,27 +870,12 @@ function normalizarPrecoAtual(l){
   const freteValor = numero(pegar(l,["Valor Frete","Frete Valor","Frete R$","Frete"]));
   const taxaCtf = numero(pegar(l,["Taxa CTF","CTF"]));
 
-  const precoLiquidoTaxa = numero(pegar(l,[
-    "Preço Líquido Taxa",
-    "Preco Liquido Taxa",
-    "Preço Liquido",
-    "Preco Liquido"
-  ]));
-
   const margem = numero(pegar(l,[
     "Margem",
     "Margem Principal",
     "Margem R$",
     "Margem Unitária",
     "Margem Unitaria"
-  ]));
-
-  const icms = numero(pegar(l,["ICMS"]));
-
-  const pisCofins = numero(pegar(l,[
-    "PIS/COFINS",
-    "Pis Cofins",
-    "PIS COFINS"
   ]));
 
   return {
@@ -950,11 +904,7 @@ function normalizarPrecoAtual(l){
     frete_valor: freteValor,
 
     taxa_ctf: taxaCtf,
-    preco_liquido_taxa: precoLiquidoTaxa,
-
-    margem: margem,
-    icms: icms,
-    pis_cofins: pisCofins
+    margem: margem
   };
 }
 
