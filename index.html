@@ -234,6 +234,7 @@ button{
   font-size:13px;
   font-weight:700;
   margin-top:10px;
+  white-space:pre-line;
 }
 
 .ok{
@@ -319,25 +320,6 @@ textarea{
   margin-top:6px;
 }
 
-.regra-box{
-  background:#f9fafb;
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:14px;
-}
-
-.regra-box strong{
-  display:block;
-  font-size:15px;
-  margin-bottom:5px;
-}
-
-.regra-box span{
-  display:block;
-  font-size:12px;
-  color:#6b7280;
-}
-
 @media(max-width:800px){
   .grid,
   .grid-2,
@@ -380,8 +362,8 @@ textarea{
   <h2>1. Base da operação <span class="pill">usuário comum</span></h2>
 
   <p class="note">
-    A base de preços é carregada automaticamente pelo arquivo precos_atuais.json.
-    A base de regras é carregada automaticamente pelo arquivo regras_ativas.json.
+    A base de preços é carregada automaticamente do Supabase pelo arquivo precos_atuais.json.
+    A base de regras é carregada automaticamente do Supabase pelo arquivo regras_ativas.json.
   </p>
 
   <div class="grid">
@@ -741,10 +723,17 @@ textarea{
 const PISO_ABSOLUTO = 0.10;
 const RISCO_VOLUME_NAO_GARANTIDO = 0.03;
 
+const SUPABASE_BASE_URL =
+  "https://zudphalpfnssnqmhqonx.supabase.co/storage/v1/object/public/calculadora-fluig/dados";
+
+const URL_PREC0S_SUPABASE = SUPABASE_BASE_URL + "/precos_atuais.json";
+const URL_REGRAS_SUPABASE = SUPABASE_BASE_URL + "/regras_ativas.json";
+
 let basePrecos = [];
 let baseRegras = [];
 
 let itemSelecionado = null;
+let regraSelecionada = null;
 let tipoPrecoSelecionado = "bomba";
 let travaAtualizacao = false;
 let jsonGerado = "";
@@ -818,76 +807,58 @@ function msgRegra(texto,tipo="alert"){
 }
 
 async function iniciar(){
+  await carregarBasePrecos();
+  await carregarBaseRegras();
 
+  preencherUnidades();
+  preencherListaClientes();
+
+  calcular();
+}
+
+async function carregarBasePrecos(){
   try{
+    const url = URL_PREC0S_SUPABASE + "?v=" + Date.now();
 
-    const respPrecos =
-      await fetch("./precos_atuais.json",
-      {cache:"no-store"});
+    const respPrecos = await fetch(url, {
+      cache:"no-store"
+    });
 
     if(!respPrecos.ok){
-      msg("Não encontrei o arquivo precos_atuais.json.");
+      msgBase("Não consegui carregar precos_atuais.json do Supabase. Verifique se o Admin salvou o arquivo em dados/precos_atuais.json.");
       return;
     }
 
-    const dadosPrecos =
-      await respPrecos.json();
+    const dadosPrecos = await respPrecos.json();
 
-    basePrecos =
-      dadosPrecos
-        .map(normalizarLinha)
-        .filter(x => x.unidade && x.produto);
+    basePrecos = Array.isArray(dadosPrecos)
+      ? dadosPrecos.map(normalizarLinhaPreco).filter(x => x.unidade && x.produto)
+      : [];
 
-    jsonGerado =
-      JSON.stringify(basePrecos, null, 2);
+    jsonGerado = JSON.stringify(basePrecos, null, 2);
 
-    preencherUnidades();
-
-    msg("Base de preços carregada automaticamente.",
-      "ok");
-
-  }catch(e){
-
-    msg("Erro ao carregar precos_atuais.json.");
-
-  }
-
-  try{
-
-    const respRegras =
-      await fetch("./regras_ativas.json",
-      {cache:"no-store"});
-
-    if(!respRegras.ok){
-      console.log("regras_ativas.json não encontrado");
-      return;
+    if(basePrecos.length > 0){
+      msgBase("Base de preços carregada automaticamente do Supabase. Registros: " + basePrecos.length + ".", "ok");
+    }else{
+      msgBase("precos_atuais.json foi carregado, mas não trouxe unidade/produto válidos.");
     }
 
-    baseRegras =
-      await respRegras.json();
-
-    console.log(
-      "Regras carregadas:",
-      baseRegras
-    );
-
   }catch(e){
-
-    console.error(
-      "Erro ao carregar regras:",
-      e
-    );
-
+    console.error("Erro ao carregar preços:", e);
+    msgBase("Erro ao carregar precos_atuais.json do Supabase. Verifique se o JSON está válido.");
   }
-
 }
 
 async function carregarBaseRegras(){
   try{
-    const resp = await fetch("./regras_ativas.json", {cache:"no-store"});
+    const url = URL_REGRAS_SUPABASE + "?v=" + Date.now();
+
+    const resp = await fetch(url, {
+      cache:"no-store"
+    });
 
     if(!resp.ok){
-      msgRegra("Arquivo regras_ativas.json não encontrado. A calculadora continuará funcionando sem regra ativa.");
+      msgRegra("Arquivo regras_ativas.json não encontrado no Supabase. A calculadora continuará funcionando sem regra ativa.");
       return;
     }
 
@@ -898,60 +869,165 @@ async function carregarBaseRegras(){
       : [];
 
     if(baseRegras.length > 0){
-      msgRegra("Base de regras ativas carregada automaticamente.", "ok");
+      msgRegra("Base de regras ativas carregada automaticamente do Supabase. Registros: " + baseRegras.length + ".", "ok");
     }else{
-      msgRegra("regras_ativas.json carregado, mas sem registros.");
+      msgRegra("regras_ativas.json carregado, mas sem registros de cliente.");
     }
 
   }catch(e){
-    msgRegra("Erro ao carregar regras_ativas.json. Verifique se o JSON está válido.");
+    console.error("Erro ao carregar regras:", e);
+    msgRegra("Erro ao carregar regras_ativas.json do Supabase. Verifique se o JSON está válido.");
   }
 }
 
 function normalizarLinhaPreco(l){
+  const cmvFrete = n(
+    l.cmv_frete ??
+    l["CMV + Frete"] ??
+    l["CMV Frete"] ??
+    l["Custo + Frete"]
+  );
+
+  const cmv = n(
+    l.cmv ??
+    l.CMV ??
+    l.custo ??
+    l.Custo ??
+    l["Custo Produto"]
+  );
+
+  const frete = n(
+    l.frete_valor ??
+    l.freteMedio ??
+    l["Frete Médio"] ??
+    l["Valor Frete"] ??
+    l.Frete
+  );
+
+  let custoNFast = n(
+    l.custoNFast ??
+    l["Custo NFast"] ??
+    l.custo_nfast_frete ??
+    l["CUSTO NFAST + Frete"]
+  );
+
+  let freteMedio = frete;
+
+  if(!Number.isFinite(custoNFast)){
+    if(Number.isFinite(cmvFrete)){
+      custoNFast = cmvFrete;
+      freteMedio = 0;
+    }else if(Number.isFinite(cmv)){
+      custoNFast = cmv;
+    }
+  }
+
+  if(!Number.isFinite(freteMedio)){
+    freteMedio = 0;
+  }
+
+  const precoAtual = n(
+    l.preco_atual ??
+    l["Preço Atual"] ??
+    l["Preco Atual"] ??
+    l.preco ??
+    l.Preco ??
+    l["Preço"] ??
+    l["Preco"] ??
+    l.valor ??
+    l.Valor
+  );
+
+  const precoPromo = n(
+    l.promo ??
+    l.Promo ??
+    l.preco_promo ??
+    l["Preço Promo"] ??
+    l["Preco Promo"]
+  );
+
+  const precoCredito = n(
+    l.credito ??
+    l["Crédito"] ??
+    l.Credito ??
+    l.preco_credito ??
+    l["Preço Crédito"] ??
+    l["Preco Credito"] ??
+    l.preco_base
+  );
+
+  const precoBomba = n(
+    l.bomba ??
+    l.Bomba ??
+    l.preco_bomba ??
+    l["Preço Bomba"] ??
+    l["Preco Bomba"] ??
+    precoAtual
+  );
+
   return {
-    rota: l.rota ?? l.Rota ?? "",
-    codigo: l.codigo ?? l["Código"] ?? "",
-    unidade: l.unidade ?? l.Unidade ?? "",
-    bandeira: l.bandeira ?? l.Bandeira ?? "",
-    classificacao: l.classificacao ?? l["Classificação"] ?? "",
-    produto: l.produto ?? l.Produto ?? "",
+    rota: texto(l.rota ?? l.Rota ?? l.rotas ?? l.Rotas),
+    codigo: texto(l.codigo ?? l["Código"] ?? l.cod_produto ?? l["Cód. Produto"]),
+    unidade: texto(l.unidade ?? l.Unidade ?? l.base ?? l.Base ?? l.filial ?? l.Filial),
+    bandeira: texto(l.bandeira ?? l.Bandeira ?? l.fornecedor ?? l.Fornecedor),
+    classificacao: texto(l.classificacao ?? l["Classificação"] ?? l["Classificacao"]),
+    produto: texto(l.produto ?? l.Produto ?? l.produto_short ?? l["Produto Short"]),
 
-    promo: n(l.promo ?? l.Promo),
-    credito: n(l.credito ?? l["Crédito"]),
-    bomba: n(l.bomba ?? l.Bomba),
-    kmv: n(l.kmv ?? l.KMV),
+    promo: precoPromo,
+    credito: precoCredito,
+    bomba: precoBomba,
+    kmv: n(l.kmv ?? l.KMV ?? l.concorrencia ?? l.Concorrencia),
 
-    dataVigencia: l.dataVigencia ?? l["Data Vigência"] ?? "",
-    freteMedio: n(l.freteMedio ?? l["Frete Médio"]),
-    custoNFast: n(l.custoNFast ?? l["Custo NFast"]),
-    custoNFastData: l.custoNFastData ?? l["Custo NFast Data"] ?? "",
-    margemPromo: n(l.margemPromo ?? l["Margem Promo R$"])
+    dataVigencia: texto(l.dataVigencia ?? l["Data Vigência"] ?? l.data ?? l.Data),
+    freteMedio: freteMedio,
+    custoNFast: custoNFast,
+    custoNFastData: texto(l.custoNFastData ?? l["Custo NFast Data"] ?? l.data ?? l.Data),
+    margemPromo: n(l.margemPromo ?? l["Margem Promo R$"] ?? l.margem)
   };
 }
 
 function normalizarLinhaRegra(l){
+  const volumeJun = n(l.volume_jun_2026 ?? l["Volume Jun/2026"] ?? l["Volume Jun"]);
+  const volumeJul = n(l.volume_jul_2026 ?? l["Volume Jul/2026"] ?? l["Volume Jul"]);
+  const volumeAgo = n(l.volume_ago_2026 ?? l["Volume Ago/2026"] ?? l["Volume Ago"]);
+
+  let media3m = n(
+    l.media_3m ??
+    l["Média ult. 3 meses"] ??
+    l["Media ult. 3 meses"] ??
+    l.volume_cliente ??
+    l.volume_regra ??
+    l.Volume
+  );
+
+  if(!Number.isFinite(media3m)){
+    const vols = [volumeJun, volumeJul, volumeAgo].filter(Number.isFinite);
+    if(vols.length){
+      media3m = vols.reduce((a,b) => a + b, 0) / vols.length;
+    }
+  }
+
   return {
     cliente: texto(l.cliente ?? l.Cliente),
     grupo_cliente: texto(l.grupo_cliente ?? l["Grupo Cliente"]),
-    gestor_conta: texto(l.gestor_conta ?? l["Gestor Conta"]),
+    gestor_conta: texto(l.gestor_conta ?? l["Gestor Conta"] ?? l.Gestor),
     status: texto(l.status ?? l.Status),
-    classificacao: texto(l.classificacao ?? l["Classificação"]),
+    classificacao: texto(l.classificacao ?? l["Classificação"] ?? l["Classificacao"]),
 
-    produto: texto(l.produto ?? l.Produto),
+    produto: texto(l.produto ?? l.Produto ?? l.produto_short ?? l["Produto Short"]),
     unidade: texto(l.unidade ?? l.Unidade),
-    forma_pagamento: texto(l.forma_pagamento ?? l["Forma Pagamento"]),
+    forma_pagamento: texto(l.forma_pagamento ?? l["Forma Pagamento"] ?? l["Forma de Pagamento"]),
 
-    preco_regra: n(l.preco_regra ?? l["Preço Regra"]),
-    preco_promo: n(l.preco_promo ?? l["Preço Promo"]),
-    preco_b2b: n(l.preco_b2b ?? l["Preço B2B"]),
-    cmv: n(l.cmv ?? l["CMV"] ?? l["Custo CMV"]),
+    preco_regra: n(l.preco_regra ?? l["Preço Regra"] ?? l["Preco Regra"]),
+    preco_promo: n(l.preco_promo ?? l["Preço Promo"] ?? l["Preco Promo"]),
+    preco_b2b: n(l.preco_b2b ?? l["Preço B2B"] ?? l["Preco B2B"]),
+    cmv: n(l.cmv ?? l["CMV"] ?? l["Custo CMV"] ?? l.cmv_frete ?? l["CMV + Frete"]),
 
-    volume_jun_2026: n(l.volume_jun_2026 ?? l["Volume Jun/2026"]),
-    volume_jul_2026: n(l.volume_jul_2026 ?? l["Volume Jul/2026"]),
-    volume_ago_2026: n(l.volume_ago_2026 ?? l["Volume Ago/2026"]),
+    volume_jun_2026: volumeJun,
+    volume_jul_2026: volumeJul,
+    volume_ago_2026: volumeAgo,
 
-    media_3m: n(l.media_3m ?? l["Média ult. 3 meses"] ?? l["Media ult. 3 meses"])
+    media_3m: media3m
   };
 }
 
@@ -972,6 +1048,18 @@ function n(v){
   if(!s) return null;
 
   s = s.replace(/\s/g, "");
+  s = s.replace("R$", "");
+  s = s.replace("%", "");
+
+  if(
+    s === "#VALOR!" ||
+    s === "#N/D" ||
+    s === "#DIV/0!" ||
+    s === "#REF!" ||
+    s === "-"
+  ){
+    return null;
+  }
 
   if(s.includes(".") && s.includes(",")){
     s = s.replace(/\./g, "").replace(",", ".");
