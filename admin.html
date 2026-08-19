@@ -383,13 +383,21 @@ const SUPABASE_URL = "https://zudphalpfnssnqmhqonx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_Q2Jto95dwggese7ASzwM7w_qwLvJAEf";
 const SUPABASE_BUCKET = "calculadora-fluig";
 
-const supabaseClient = supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let supabaseClient = null;
 
 let regrasConvertidas = [];
 let precosConvertidos = [];
 
 let jsonRegrasGerado = "";
 let jsonPrecosGerado = "";
+
+window.addEventListener("load",function(){
+  if(typeof supabase !== "undefined"){
+    supabaseClient = supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  }else{
+    msg("A biblioteca do Supabase não carregou. Verifique a internet e atualize a página.","error");
+  }
+});
 
 function msg(texto,tipo="alert"){
   const el = document.getElementById("msg");
@@ -541,7 +549,7 @@ async function importarArquivo(event,tipo){
 
   }catch(e){
     console.error(e);
-    msg("Erro ao processar o arquivo. Verifique se o Excel está íntegro e tente novamente.","error");
+    msg("Erro ao processar o arquivo. Verifique se o Excel está íntegro e tente novamente.\n\nDetalhe técnico: " + (e.message || e),"error");
   }
 }
 
@@ -880,11 +888,7 @@ function normalizarPrecoAtual(l){
     "Base Preco"
   ]));
 
-  const cmv = numero(pegar(l,[
-    "CMV",
-    "Custo",
-    "Custo Produto"
-  ]));
+  const cmv = numero(pegar(l,["CMV","Custo","Custo Produto"]));
 
   const cmvFrete = numero(pegar(l,[
     "CMV + Frete",
@@ -894,13 +898,7 @@ function normalizarPrecoAtual(l){
     "Custo Frete"
   ]));
 
-  const freteValor = numero(pegar(l,[
-    "Valor Frete",
-    "Frete Valor",
-    "Frete R$",
-    "Frete"
-  ]));
-
+  const freteValor = numero(pegar(l,["Valor Frete","Frete Valor","Frete R$","Frete"]));
   const taxaCtf = numero(pegar(l,["Taxa CTF","CTF"]));
 
   const precoLiquidoTaxa = numero(pegar(l,[
@@ -1199,6 +1197,11 @@ function baixarArquivo(nome,conteudo){
 }
 
 async function salvarDadosOnline(){
+  if(!supabaseClient){
+    msg("Supabase não foi carregado. Atualize a página e tente novamente.","error");
+    return;
+  }
+
   if(!jsonRegrasGerado && !jsonPrecosGerado){
     msg("Nenhum JSON foi gerado ainda. Primeiro suba pelo menos um dos arquivos.","error");
     return;
@@ -1211,20 +1214,23 @@ async function salvarDadosOnline(){
   try{
     if(jsonRegrasGerado){
       await enviarJsonSupabase("dados/regras_ativas.json",jsonRegrasGerado);
-      resultados.push("regras_ativas.json salvo em dados/regras_ativas.json");
+      resultados.push("regras_ativas.json substituído com sucesso");
     }
 
     if(jsonPrecosGerado){
       await enviarJsonSupabase("dados/precos_atuais.json",jsonPrecosGerado);
-      resultados.push("precos_atuais.json salvo em dados/precos_atuais.json");
+      resultados.push("precos_atuais.json substituído com sucesso");
     }
 
     mostrarLinksOnline();
 
+    const agora = new Date().toLocaleString("pt-BR");
+
     msg(
       "Dados salvos online com sucesso.\n\n" +
       resultados.join("\n") +
-      "\n\nAgora a calculadora poderá ler os arquivos atualizados no Supabase.",
+      "\n\nÚltima atualização: " + agora +
+      "\n\nOs arquivos antigos foram substituídos pelos novos.",
       "ok"
     );
 
@@ -1279,14 +1285,16 @@ function mostrarLinksOnline(){
     .from(SUPABASE_BUCKET)
     .getPublicUrl("dados/precos_atuais.json");
 
+  const versao = Date.now();
+
   let html = "";
   html += "<b>Links públicos gerados:</b><br><br>";
 
   html += "<b>Regras:</b><br>";
-  html += escapeHtml(regras.data.publicUrl) + "<br><br>";
+  html += escapeHtml(regras.data.publicUrl + "?v=" + versao) + "<br><br>";
 
   html += "<b>Preços:</b><br>";
-  html += escapeHtml(precos.data.publicUrl);
+  html += escapeHtml(precos.data.publicUrl + "?v=" + versao);
 
   el.innerHTML = html;
   el.className = "linkbox";
